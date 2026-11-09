@@ -2,11 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://backend-api-production-c798.up.railway.app/api/$1"
+      "source": "/api",
+      "destination": "/api/index.js?__path=health"
     },
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
+      "destination": "/api/index.js?__path=$1"
+    },
+    {
+      "source": "/((?!api(?:/|$)).*)",
       "destination": "/"
     }
   ],

@@ -1,6 +1,3 @@
-import path from 'node:path';
-import fs from 'node:fs';
-
 /**
  * Firebase Firestore Backend Adapter for Chethan Kumar Portfolio
  * 

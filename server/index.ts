@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import http from 'node:http';
-import { handleApiRequest } from './apiHandler.ts';
-import { formatIST } from './cryptoUtils.ts';
-import { isFirebaseConfigured } from './firebase.ts';
+import { handleApiRequest } from './apiHandler';
+import { formatIST } from './cryptoUtils';
+import { isFirebaseConfigured } from './firebase';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build:api": "esbuild api/serverless.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=api/index.js",
+    "build": "tsc && vite build && npm run build:api",
     "preview": "vite preview",
     "server": "vite-node server/index.ts",
     "start:server": "vite-node server/index.ts",
@@ -33,6 +34,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.19",
+    "esbuild": "^0.21.5",
     "postcss": "^8.4.38",
     "puppeteer-core": "^25.16.0",
     "tailwindcss": "^3.4.3",

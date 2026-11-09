@@ -11,9 +11,9 @@ import {
   verifyTOTP, 
   safeCompare,
   formatIST
-} from './cryptoUtils.ts';
-import { stateManager } from './state.ts';
-import { notificationService } from './notificationService.ts';
+} from './cryptoUtils';
+import { stateManager } from './state';
+import { notificationService } from './notificationService';
 import QRCode from 'qrcode';
 import { 
   generateRegistrationOptions, 
@@ -29,16 +29,16 @@ import type {
 import { 
   maskEmail, 
   maskPhone 
-} from './types.ts';
+} from './types';
 import type { 
   AuthenticatorAppType, 
-  EnrolledAuthenticatorApp 
-} from './types.ts';
+  EnrolledAuthenticatorApp,
+  DeliveryStatus
+} from './types';
 import { 
   persistProfileToFirestore, 
-  logAuditToFirestore, 
   registerFCMDeviceTokenInFirestore 
-} from './firebase.ts';
+} from './firebase';
 
 // Extract Bearer Token from Authorization Header
 function extractBearerToken(req: IncomingMessage): string | null {
@@ -71,6 +71,22 @@ function verifyOwnerSession(req: IncomingMessage): boolean {
   return true;
 }
 async function parseJsonBody(req: IncomingMessage): Promise<Record<string, any>> {
+  try {
+    if ((req as any).body !== undefined && (req as any).body !== null) {
+      if (typeof (req as any).body === 'object') {
+        return (req as any).body;
+      }
+      if (typeof (req as any).body === 'string') {
+        try {
+          return JSON.parse((req as any).body);
+        } catch {
+          return {};
+        }
+      }
+    }
+  } catch {
+    // Vercel body getter may throw on invalid JSON
+  }
   return new Promise((resolve) => {
     let body = '';
     req.on('data', chunk => {
@@ -200,7 +216,10 @@ function getClientMeta(req: IncomingMessage) {
 // Master Request Router for /api/*
 export async function handleApiRequest(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost:3000'}`);
-  const pathname = urlObj.pathname;
+  let pathname = urlObj.pathname;
+  if (!pathname.startsWith('/api')) {
+    pathname = `/api${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
+  }
   const method = req.method?.toUpperCase() || 'GET';
   const meta = getClientMeta(req);
 
@@ -750,7 +769,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
     stateManager.pendingEmailOTP = {
       codeHash: hmacSha256(rawOtp),
       purpose: 'PASSWORD_CHANGE',
-      destination: state.owner.recoveryEmail,
+      destinationMasked: maskEmail(state.owner.recoveryEmail),
       expiresAt: now + 10 * 60 * 1000, // 10 minutes
       attempts: 0,
       lastSentAt: now

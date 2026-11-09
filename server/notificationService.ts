@@ -3,13 +3,13 @@ import nodemailer from 'nodemailer';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { formatIST, sha256 } from './cryptoUtils.ts';
-import { maskEmail, maskPhone } from './types.ts';
+import { formatIST, sha256 } from './cryptoUtils';
+import { maskEmail, maskPhone } from './types';
 import type { 
   DeliveryStatus, 
   NotificationDeliveryRecord, 
   TwilioComprehensiveDiagnostics 
-} from './types.ts';
+} from './types';
 
 export interface SecurityNotificationPayload {
   eventType: string;
