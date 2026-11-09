@@ -148,6 +148,13 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
     setErrorMsg('');
     try {
       const options = await apiClient.getPasskeyLoginOptions();
+      if (options && typeof window !== 'undefined' && window.location.hostname) {
+        const clientHostname = window.location.hostname;
+        if (clientHostname !== 'localhost') {
+          if (options.rpId) options.rpId = clientHostname;
+          if (options.rp?.id) options.rp.id = clientHostname;
+        }
+      }
       const authResp = await startAuthentication({ optionsJSON: options });
       const res = await apiClient.verifyPasskeyLogin(challengeToken, authResp);
       if (res.authenticated) {

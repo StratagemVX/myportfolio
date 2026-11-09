@@ -141,13 +141,18 @@ class SecurityApiClient {
   }
 
   async getPasskeyLoginOptions(): Promise<any> {
-    return this.request('/api/auth/passkey/login-options', { method: 'POST' });
+    const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
+    return this.request('/api/auth/passkey/login-options', {
+      method: 'POST',
+      body: JSON.stringify({ origin })
+    });
   }
 
   async verifyPasskeyLogin(challengeToken: string | null, response: any): Promise<any> {
+    const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
     const res = await this.request<any>('/api/auth/passkey/verify-login', {
       method: 'POST',
-      body: JSON.stringify({ challengeToken, response })
+      body: JSON.stringify({ challengeToken, response, origin })
     });
     if (res.sessionToken) {
       this.setSessionToken(res.sessionToken);
@@ -265,13 +270,18 @@ class SecurityApiClient {
 
   // WebAuthn Passkeys
   async getPasskeyRegisterOptions(): Promise<any> {
-    return this.request('/api/mfa/passkey/register-options', { method: 'POST' });
+    const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
+    return this.request('/api/mfa/passkey/register-options', {
+      method: 'POST',
+      body: JSON.stringify({ origin })
+    });
   }
 
   async verifyPasskeyRegister(deviceLabel: string, response: any): Promise<{ success: boolean; passkeys: any[]; message: string }> {
+    const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
     return this.request('/api/mfa/passkey/register-verify', {
       method: 'POST',
-      body: JSON.stringify({ deviceLabel, response })
+      body: JSON.stringify({ deviceLabel, response, origin })
     });
   }
 

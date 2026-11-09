@@ -657,11 +657,74 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
     return true;
   }
 
+// Helper to extract reliable WebAuthn RP ID and expected origins dynamically
+function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
+  let hostname = '';
+
+  // 1. Try body origin if supplied
+  if (body?.origin && typeof body.origin === 'string') {
+    try {
+      hostname = new URL(body.origin).hostname;
+    } catch {}
+  }
+
+  // 2. Try Origin header
+  if (!hostname && req.headers.origin && typeof req.headers.origin === 'string') {
+    try {
+      hostname = new URL(req.headers.origin).hostname;
+    } catch {}
+  }
+
+  // 3. Try Referer header
+  if (!hostname && req.headers.referer && typeof req.headers.referer === 'string') {
+    try {
+      hostname = new URL(req.headers.referer).hostname;
+    } catch {}
+  }
+
+  // 4. Try Host headers
+  if (!hostname) {
+    const rawHost = (req.headers['x-forwarded-host'] as string) || req.headers.host || '';
+    if (rawHost) {
+      hostname = rawHost.split(':')[0].trim();
+    }
+  }
+
+  // Sanitize hostname: lowercase and strip any ports
+  hostname = hostname.replace(/:\d+$/, '').trim().toLowerCase();
+
+  const rpID = hostname || 'localhost';
+
+  const expectedRPID = Array.from(new Set([
+    rpID,
+    'localhost',
+    'chethan-kumar-portfolio.vercel.app',
+    'chethankumar.dev'
+  ]));
+
+  const expectedOrigin = Array.from(new Set([
+    `https://${rpID}`,
+    `http://${rpID}`,
+    `http://${rpID}:3000`,
+    `http://${rpID}:5173`,
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://chethan-kumar-portfolio.vercel.app',
+    'https://chethankumar.dev',
+    ...(req.headers.origin ? [req.headers.origin as string] : []),
+    ...(body?.origin ? [body.origin as string] : [])
+  ]));
+
+  return { rpID, expectedRPID, expectedOrigin };
+}
+
   // 6. Passkey WebAuthn Login Options & Verification
   if (pathname === '/api/auth/passkey/login-options' && method === 'POST') {
+    const body = await parseJsonBody(req);
+    const { rpID } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
     const options = await generateAuthenticationOptions({
-      rpID: 'localhost',
+      rpID,
       allowCredentials: state.owner.passkeys.map(p => ({
         id: p.id,
         transports: p.transports
@@ -677,6 +740,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
   if (pathname === '/api/auth/passkey/verify-login' && method === 'POST') {
     const body = await parseJsonBody(req);
     const { challengeToken, response: authResp } = body;
+    const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
 
     const expectedChallenge = stateManager.currentWebAuthnChallenge;
@@ -695,8 +759,8 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
       const verification = await verifyAuthenticationResponse({
         response: authResp as AuthenticationResponseJSON,
         expectedChallenge,
-        expectedOrigin: ['http://localhost:3000', 'https://chethankumar.dev'],
-        expectedRPID: 'localhost',
+        expectedOrigin,
+        expectedRPID,
         credential: {
           id: passkey.id,
           publicKey: Buffer.from(passkey.publicKey, 'base64url'),
@@ -1395,10 +1459,12 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
 
   // 13. Passkey Registration: Options & Verify
   if (pathname === '/api/mfa/passkey/register-options' && method === 'POST') {
+    const body = await parseJsonBody(req);
+    const { rpID } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
     const options = await generateRegistrationOptions({
       rpName: 'Chethan Kumar Portfolio Security',
-      rpID: 'localhost',
+      rpID,
       userID: Buffer.from(state.owner.id),
       userName: state.owner.loginEmail,
       userDisplayName: state.owner.displayName,
@@ -1421,6 +1487,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
   if (pathname === '/api/mfa/passkey/register-verify' && method === 'POST') {
     const body = await parseJsonBody(req);
     const { deviceLabel, response: regResp } = body;
+    const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
 
     const expectedChallenge = stateManager.currentWebAuthnChallenge;
@@ -1433,8 +1500,8 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
       const verification = await verifyRegistrationResponse({
         response: regResp as RegistrationResponseJSON,
         expectedChallenge,
-        expectedOrigin: ['http://localhost:3000', 'https://chethankumar.dev'],
-        expectedRPID: 'localhost'
+        expectedOrigin,
+        expectedRPID
       });
 
       if (verification.verified && verification.registrationInfo) {

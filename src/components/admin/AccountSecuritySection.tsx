@@ -425,7 +425,14 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
     e.preventDefault();
     setLoading(true);
     try {
-      const options = await apiClient.getPasskeyLoginOptions();
+      const options = await apiClient.getPasskeyRegisterOptions();
+      if (options && typeof window !== 'undefined' && window.location.hostname) {
+        const clientHostname = window.location.hostname;
+        if (clientHostname !== 'localhost') {
+          if (options.rpId) options.rpId = clientHostname;
+          if (options.rp?.id) options.rp.id = clientHostname;
+        }
+      }
       const regResp = await startRegistration({ optionsJSON: options });
       const res = await apiClient.verifyPasskeyRegister(passkeyLabel, regResp);
       showFeedback('success', res.message);

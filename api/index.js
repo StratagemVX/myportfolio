@@ -2392,10 +2392,60 @@ async function handleApiRequest(req, res) {
     }
     return true;
   }
+  function getWebAuthnConfig(req2, body) {
+    let hostname = "";
+    if (body?.origin && typeof body.origin === "string") {
+      try {
+        hostname = new URL(body.origin).hostname;
+      } catch {
+      }
+    }
+    if (!hostname && req2.headers.origin && typeof req2.headers.origin === "string") {
+      try {
+        hostname = new URL(req2.headers.origin).hostname;
+      } catch {
+      }
+    }
+    if (!hostname && req2.headers.referer && typeof req2.headers.referer === "string") {
+      try {
+        hostname = new URL(req2.headers.referer).hostname;
+      } catch {
+      }
+    }
+    if (!hostname) {
+      const rawHost = req2.headers["x-forwarded-host"] || req2.headers.host || "";
+      if (rawHost) {
+        hostname = rawHost.split(":")[0].trim();
+      }
+    }
+    hostname = hostname.replace(/:\d+$/, "").trim().toLowerCase();
+    const rpID = hostname || "localhost";
+    const expectedRPID = Array.from(/* @__PURE__ */ new Set([
+      rpID,
+      "localhost",
+      "chethan-kumar-portfolio.vercel.app",
+      "chethankumar.dev"
+    ]));
+    const expectedOrigin = Array.from(/* @__PURE__ */ new Set([
+      `https://${rpID}`,
+      `http://${rpID}`,
+      `http://${rpID}:3000`,
+      `http://${rpID}:5173`,
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "https://chethan-kumar-portfolio.vercel.app",
+      "https://chethankumar.dev",
+      ...req2.headers.origin ? [req2.headers.origin] : [],
+      ...body?.origin ? [body.origin] : []
+    ]));
+    return { rpID, expectedRPID, expectedOrigin };
+  }
   if (pathname === "/api/auth/passkey/login-options" && method === "POST") {
+    const body = await parseJsonBody(req);
+    const { rpID } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
     const options = await generateAuthenticationOptions({
-      rpID: "localhost",
+      rpID,
       allowCredentials: state.owner.passkeys.map((p) => ({
         id: p.id,
         transports: p.transports
@@ -2409,6 +2459,7 @@ async function handleApiRequest(req, res) {
   if (pathname === "/api/auth/passkey/verify-login" && method === "POST") {
     const body = await parseJsonBody(req);
     const { challengeToken, response: authResp } = body;
+    const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
     const expectedChallenge = stateManager.currentWebAuthnChallenge;
     if (!expectedChallenge) {
@@ -2424,8 +2475,8 @@ async function handleApiRequest(req, res) {
       const verification = await verifyAuthenticationResponse({
         response: authResp,
         expectedChallenge,
-        expectedOrigin: ["http://localhost:3000", "https://chethankumar.dev"],
-        expectedRPID: "localhost",
+        expectedOrigin,
+        expectedRPID,
         credential: {
           id: passkey.id,
           publicKey: Buffer.from(passkey.publicKey, "base64url"),
@@ -3024,10 +3075,12 @@ async function handleApiRequest(req, res) {
     return true;
   }
   if (pathname === "/api/mfa/passkey/register-options" && method === "POST") {
+    const body = await parseJsonBody(req);
+    const { rpID } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
     const options = await generateRegistrationOptions({
       rpName: "Chethan Kumar Portfolio Security",
-      rpID: "localhost",
+      rpID,
       userID: Buffer.from(state.owner.id),
       userName: state.owner.loginEmail,
       userDisplayName: state.owner.displayName,
@@ -3048,6 +3101,7 @@ async function handleApiRequest(req, res) {
   if (pathname === "/api/mfa/passkey/register-verify" && method === "POST") {
     const body = await parseJsonBody(req);
     const { deviceLabel, response: regResp } = body;
+    const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
     const expectedChallenge = stateManager.currentWebAuthnChallenge;
     if (!expectedChallenge) {
@@ -3058,8 +3112,8 @@ async function handleApiRequest(req, res) {
       const verification = await verifyRegistrationResponse({
         response: regResp,
         expectedChallenge,
-        expectedOrigin: ["http://localhost:3000", "https://chethankumar.dev"],
-        expectedRPID: "localhost"
+        expectedOrigin,
+        expectedRPID
       });
       if (verification.verified && verification.registrationInfo) {
         const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
