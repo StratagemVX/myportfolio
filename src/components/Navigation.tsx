@@ -38,6 +38,12 @@ export default function Navigation() {
 
   return (
     <header className="sticky top-0 z-50 bg-[#101114]/90 backdrop-blur-md border-b border-[rgba(255,255,255,0.08)]">
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-[#A8B8A7] focus:text-[#101114] focus:font-mono focus:text-xs focus:rounded focus:outline-none"
+      >
+        Skip to main content
+      </a>
       <div className="site-container h-16 flex items-center justify-between">
         {/* Brand Mark */}
         <Link to="/" className="flex items-center space-x-3 group">
@@ -136,7 +142,7 @@ export default function Navigation() {
             <Link
               to="/admin"
               onClick={() => setMobileOpen(false)}
-              className="text-[#6E727A] hover:text-[#A4A8AE]"
+              className="text-[#9CA1AA] hover:text-[#F0F0ED] transition-colors"
             >
               Owner Portal
             </Link>

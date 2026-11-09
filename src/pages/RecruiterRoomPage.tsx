@@ -114,7 +114,7 @@ export default function RecruiterRoomPage() {
                 <td className="py-3 px-4 text-[#A4A8AE]">TypeScript, AES-256, Web Crypto, PBKDF2</td>
                 <td className="py-3 px-4 text-[#A8B8A7]">SecretSnap</td>
                 <td className="py-3 px-4 text-right">
-                  <a href="https://github.com/StratagemVX/Secret-snap" target="_blank" className="text-[#A4A8AE] hover:text-[#F0F0ED]">
+                  <a href="https://github.com/StratagemVX/Secret-snap" target="_blank" rel="noopener noreferrer" className="text-[#A4A8AE] hover:text-[#F0F0ED]" aria-label="Source code for SecretSnap on GitHub">
                     Source Code →
                   </a>
                 </td>
@@ -124,7 +124,7 @@ export default function RecruiterRoomPage() {
                 <td className="py-3 px-4 text-[#A4A8AE]">React, TypeScript, WebSockets, Supabase</td>
                 <td className="py-3 px-4 text-[#A8B8A7]">MediQueue (Queue-buddy-final)</td>
                 <td className="py-3 px-4 text-right">
-                  <a href="https://github.com/StratagemVX/Queue-buddy-final" target="_blank" className="text-[#A4A8AE] hover:text-[#F0F0ED]">
+                  <a href="https://github.com/StratagemVX/Queue-buddy-final" target="_blank" rel="noopener noreferrer" className="text-[#A4A8AE] hover:text-[#F0F0ED]" aria-label="Source code for MediQueue on GitHub">
                     Source Code →
                   </a>
                 </td>
@@ -134,7 +134,7 @@ export default function RecruiterRoomPage() {
                 <td className="py-3 px-4 text-[#A4A8AE]">Python 3.12, PyTorch (CUDA 12.1), TorchVision</td>
                 <td className="py-3 px-4 text-[#A8B8A7]">PRISM (Major-Project)</td>
                 <td className="py-3 px-4 text-right">
-                  <a href="https://github.com/StratagemVX/Major-Project" target="_blank" className="text-[#A4A8AE] hover:text-[#F0F0ED]">
+                  <a href="https://github.com/StratagemVX/Major-Project" target="_blank" rel="noopener noreferrer" className="text-[#A4A8AE] hover:text-[#F0F0ED]" aria-label="Source code for PRISM on GitHub">
                     Source Code →
                   </a>
                 </td>
@@ -144,7 +144,7 @@ export default function RecruiterRoomPage() {
                 <td className="py-3 px-4 text-[#A4A8AE]">TypeScript, Python, SymSpell, TextBlob, NLTK</td>
                 <td className="py-3 px-4 text-[#A8B8A7]">SpellSense NLP</td>
                 <td className="py-3 px-4 text-right">
-                  <a href="https://github.com/StratagemVX/spellSense-NLP_AAT" target="_blank" className="text-[#A4A8AE] hover:text-[#F0F0ED]">
+                  <a href="https://github.com/StratagemVX/spellSense-NLP_AAT" target="_blank" rel="noopener noreferrer" className="text-[#A4A8AE] hover:text-[#F0F0ED]" aria-label="Source code for SpellSense NLP on GitHub">
                     Source Code →
                   </a>
                 </td>
@@ -154,7 +154,7 @@ export default function RecruiterRoomPage() {
                 <td className="py-3 px-4 text-[#A4A8AE]">React, TypeScript, Web Audio API, AES Buffers</td>
                 <td className="py-3 px-4 text-[#A8B8A7]">Shadow Message Cipher (SDC-Level-3)</td>
                 <td className="py-3 px-4 text-right">
-                  <a href="https://github.com/StratagemVX/SDC-Level-3" target="_blank" className="text-[#A4A8AE] hover:text-[#F0F0ED]">
+                  <a href="https://github.com/StratagemVX/SDC-Level-3" target="_blank" rel="noopener noreferrer" className="text-[#A4A8AE] hover:text-[#F0F0ED]" aria-label="Source code for Shadow Message Cipher on GitHub">
                     Source Code →
                   </a>
                 </td>
@@ -172,7 +172,7 @@ export default function RecruiterRoomPage() {
         </div>
         <p className="text-xs text-[#A4A8AE] leading-relaxed font-sans font-light">
           Did Chethan issue you an invitation verification token? Enter it below to unlock the verified candidate assessment record.
-          <span className="block text-[11px] text-[#A4A8AE]/70 mt-1">
+          <span className="block text-[11px] text-[#9CA1AA] mt-1">
             Note: Public viewing of this brief and portfolio requires no token.
           </span>
         </p>

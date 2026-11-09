@@ -118,17 +118,17 @@ export default function AcademicsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono text-xs">
             <div className="space-y-1">
-              <span className="text-[10px] text-[#6E727A] uppercase tracking-wider block font-medium">Location</span>
+              <span className="text-[10px] text-[#9CA1AA] uppercase tracking-wider block font-medium">Location</span>
               <p className="text-[#F0F0ED] font-sans text-sm">Bengaluru, Karnataka, India</p>
               <p className="text-[#A4A8AE] text-xs font-light">Primary technology & software engineering hub</p>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] text-[#6E727A] uppercase tracking-wider block font-medium">University affiliation</span>
+              <span className="text-[10px] text-[#9CA1AA] uppercase tracking-wider block font-medium">University affiliation</span>
               <p className="text-[#F0F0ED] font-sans text-sm">VTU (State Technological University)</p>
               <p className="text-[#A4A8AE] text-xs font-light">Standardized engineering curriculum & evaluation</p>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] text-[#6E727A] uppercase tracking-wider block font-medium">Policy on credentials</span>
+              <span className="text-[10px] text-[#9CA1AA] uppercase tracking-wider block font-medium">Policy on credentials</span>
               <p className="text-[#F0F0ED] font-sans text-sm">Factual Authenticity</p>
               <p className="text-[#A4A8AE] text-xs font-light">No fabricated CGPA, ranking, or unverified honors</p>
             </div>
@@ -203,12 +203,13 @@ export default function AcademicsPage() {
                 </div>
 
                 <div className="pt-4 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between font-mono text-xs">
-                  <span className="text-[#6E727A] text-[11px]">Academic GitHub repository</span>
+                  <span className="text-[#9CA1AA] text-[11px]">Academic GitHub repository</span>
                   <a
                     href={repo.repoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#A8B8A7] hover:text-[#F0F0ED] flex items-center space-x-1 transition-colors"
+                    aria-label={`Inspect source for ${repo.name}`}
                   >
                     <Github className="w-3.5 h-3.5" />
                     <span>Inspect source ↗</span>

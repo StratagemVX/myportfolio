@@ -90,22 +90,23 @@ export default function HomePage() {
             {/* Quiet Credential Strip */}
             <div className="pt-6 border-t border-[rgba(255,255,255,0.06)] grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-mono">
               <div>
-                <span className="text-[10px] text-[#6E727A] block">AFFILIATION</span>
+                <span className="text-[10px] text-[#9CA1AA] block">AFFILIATION</span>
                 <span className="text-[#F0F0ED]">MVJCE / VTU</span>
               </div>
               <div>
-                <span className="text-[10px] text-[#6E727A] block">PUBLIC REPOSITORIES</span>
+                <span className="text-[10px] text-[#9CA1AA] block">PUBLIC REPOSITORIES</span>
                 <a 
                   href="https://github.com/StratagemVX" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="text-[#A8B8A7] hover:underline"
+                  aria-label="20 on GitHub — View StratagemVX profile on GitHub"
                 >
                   20 on GitHub →
                 </a>
               </div>
               <div className="col-span-2 sm:col-span-1">
-                <span className="text-[10px] text-[#6E727A] block">AVAILABILITY</span>
+                <span className="text-[10px] text-[#9CA1AA] block">AVAILABILITY</span>
                 <span className="text-[#A8B8A7]">Graduate Roles</span>
               </div>
             </div>
@@ -140,7 +141,7 @@ export default function HomePage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="text-[#A8B8A7] font-medium">{project.category}</span>
-                    <span className="text-[#6E727A]">{project.language} · {project.status}</span>
+                    <span className="text-[#9CA1AA]">{project.language} · {project.status}</span>
                   </div>
 
                   <h3 className="font-display text-2xl font-medium text-[#F0F0ED]">
@@ -168,6 +169,7 @@ export default function HomePage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#A4A8AE] hover:text-[#F0F0ED] flex items-center space-x-1.5 transition-colors font-mono"
+                    aria-label={`View repository for ${project.name}`}
                   >
                     <Github className="w-3.5 h-3.5" />
                     <span>View repository</span>
@@ -175,6 +177,7 @@ export default function HomePage() {
                   <Link
                     to={`/project/${project.slug}`}
                     className="text-[#A8B8A7] hover:underline font-medium"
+                    aria-label={`Read case study for ${project.name}`}
                   >
                     Read case study →
                   </Link>

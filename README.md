@@ -328,11 +328,16 @@ For complete discovery engine details, see [`docs/GITHUB_SYNC.md`](docs/GITHUB_S
 ## 11. Deployment
 
 The system is deployed using a decoupled architecture:
-- **Frontend on Vercel:** Continuous deployment from GitHub with `vercel.json` rewrites and strict security headers (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`). Custom domain: `https://chethankumar.dev`.
-- **Backend on Railway:** Deployed via `railway.json` using Nixpacks. Includes automated health checks on `/health` and `/health/ready`.
+- **Frontend on Vercel:** Continuous deployment from GitHub with `vercel.json` rewrites and strict enterprise security headers (CSP, HSTS, COOP, X-Frame-Options: DENY, X-Content-Type-Options: nosniff). Production URL: `https://chethan-kumar-portfolio.vercel.app`.
+- **Backend on Railway & Vercel Serverless:** Native edge API endpoint on `/api/*` paired with Railway container deployment via `railway.json` using Nixpacks. Includes automated health checks on `/health` and `/health/ready`.
 - **Database on Firebase Firestore:** Free Spark plan document storage with `firestore.rules` enforcing a strict default-deny boundary.
 
-For step-by-step production setup, see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+For complete technical audits and guides, see:
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — Production deployment guides for Vercel, Railway, and Firebase.
+- [`docs/performance/PERFORMANCE_COMPARISON.md`](docs/performance/PERFORMANCE_COMPARISON.md) — Google Lighthouse Core Web Vitals & performance optimization benchmarks.
+- [`docs/accessibility/ACCESSIBILITY_AUDIT.md`](docs/accessibility/ACCESSIBILITY_AUDIT.md) — WCAG 2.2 AA accessibility audit (100/100 score).
+- [`docs/security/SECURITY_HEADERS.md`](docs/security/SECURITY_HEADERS.md) — Defensive HTTP security headers specification.
+- [`docs/seo/SEO_AUDIT.md`](docs/seo/SEO_AUDIT.md) — Technical SEO, XML sitemap, and Schema.org structured data audit (100/100 score).
 
 ---
 
@@ -345,10 +350,10 @@ npm run test
 ```
 
 ### Verified Test Results:
-- **`tests/portfolio.test.ts` (5 tests):** Validates project schema, slug formatting, case study integrity, and navigation links.
+- **`tests/portfolio.test.ts` (7 tests):** Validates project schema, slug formatting, case study integrity, navigation links, and WCAG color contrast standards.
 - **`tests/owner-security.test.ts` (18 tests):** Validates constant-time password comparisons, RFC 6238 TOTP verification, session TTL expiration, and recovery code consumption.
 - **`tests/notification-infrastructure.test.ts` (18 tests):** Validates Twilio SMS, WhatsApp, and Comms Email payload formatting, delivery status normalization, and webhook callbacks.
-- **Overall Result:** `41 passed (100% pass rate)`.
+- **Overall Result:** `43 passed (100% pass rate)`.
 
 ---
 

@@ -205,7 +205,7 @@ export default function RecruiterBriefPage() {
           </div>
           <p className="text-xs text-[#A4A8AE] leading-relaxed font-light">
             Did Chethan provide an invitation token? Enter it below to unlock the verified candidate assessment record.
-            <span className="block text-[11px] text-[#A4A8AE]/70 mt-1 font-mono">
+            <span className="block text-[11px] text-[#9CA1AA] mt-1 font-mono">
               Note: Public viewing of this brief, repository case studies, and résumé requires no clearance.
             </span>
           </p>

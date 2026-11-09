@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://chethan-kumar-portfolio.vercel.app/sitemap.xml

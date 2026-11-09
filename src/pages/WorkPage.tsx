@@ -110,7 +110,7 @@ export default function WorkPage() {
                     </p>
                   </div>
                   <div className="p-3.5 bg-[#1B1E24] rounded-lg border border-[rgba(255,255,255,0.05)] space-y-1">
-                    <span className="text-[10px] font-mono tracking-wider text-[#6E727A] uppercase block font-medium">
+                    <span className="text-[10px] font-mono tracking-wider text-[#9CA1AA] uppercase block font-medium">
                       Honest limitation
                     </span>
                     <p className="text-[#A4A8AE] text-xs leading-relaxed font-light">
@@ -139,6 +139,7 @@ export default function WorkPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#A4A8AE] hover:text-[#F0F0ED] flex items-center space-x-1.5 transition-colors"
+                  aria-label={`GitHub repository for ${project.name}`}
                 >
                   <Github className="w-4 h-4" />
                   <span>Repository</span>
@@ -151,6 +152,7 @@ export default function WorkPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#A8B8A7] hover:underline flex items-center space-x-1 text-xs"
+                      aria-label={`Live demo for ${project.name}`}
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       <span>Live demo</span>
@@ -159,6 +161,7 @@ export default function WorkPage() {
                   <Link
                     to={`/project/${project.slug}`}
                     className="px-3.5 py-1.5 rounded-lg bg-[#22252C] border border-[rgba(255,255,255,0.08)] text-[#A8B8A7] hover:border-[#A8B8A7] hover:text-[#F0F0ED] transition-colors btn-highlight"
+                    aria-label={`Read case study for ${project.name}`}
                   >
                     Read case study →
                   </Link>

@@ -55,4 +55,43 @@ describe('Chethan Kumar Portfolio Data Integrity & Route Architecture Tests', ()
     expect(raw).not.toContain('client_secret');
     expect(raw).not.toContain('private_key');
   });
+
+  it('validates SEO assets: robots.txt and sitemap.xml exist and conform to standards', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const robotsPath = path.join(process.cwd(), 'public', 'robots.txt');
+    expect(fs.existsSync(robotsPath)).toBe(true);
+    const robotsContent = fs.readFileSync(robotsPath, 'utf-8');
+    expect(robotsContent).toContain('User-agent: *');
+    expect(robotsContent).toContain('Allow: /');
+    expect(robotsContent).toContain('Sitemap: https://chethan-kumar-portfolio.vercel.app/sitemap.xml');
+
+    const sitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
+    expect(fs.existsSync(sitemapPath)).toBe(true);
+    const sitemapContent = fs.readFileSync(sitemapPath, 'utf-8');
+    expect(sitemapContent).toContain('<?xml version="1.0" encoding="UTF-8"?>');
+    expect(sitemapContent).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+    expect(sitemapContent).toContain('https://chethan-kumar-portfolio.vercel.app/work');
+    expect(sitemapContent).toContain('https://chethan-kumar-portfolio.vercel.app/evidence');
+  });
+
+  it('validates enterprise security headers in vercel.json configuration', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const vercelConfigPath = path.join(process.cwd(), 'vercel.json');
+    expect(fs.existsSync(vercelConfigPath)).toBe(true);
+    const vercelConfig = JSON.parse(fs.readFileSync(vercelConfigPath, 'utf-8'));
+
+    const globalHeaders = vercelConfig.headers.find((h: any) => h.source === '/(.*)');
+    expect(globalHeaders).toBeDefined();
+
+    const headerKeys = globalHeaders.headers.map((h: any) => h.key);
+    expect(headerKeys).toContain('Strict-Transport-Security');
+    expect(headerKeys).toContain('Content-Security-Policy');
+    expect(headerKeys).toContain('Cross-Origin-Opener-Policy');
+    expect(headerKeys).toContain('X-Frame-Options');
+    expect(headerKeys).toContain('X-Content-Type-Options');
+  });
 });

@@ -92,15 +92,15 @@ export default function Footer() {
                 <ArrowUp className="w-4 h-4" />
               </button>
             </div>
-            <Link to="/admin" className="text-[10px] text-[#4A4E58] hover:text-[#A4A8AE] transition-colors">
+            <Link to="/admin" className="text-[10px] text-[#9CA1AA] hover:text-[#F0F0ED] transition-colors">
               Owner portal
             </Link>
           </div>
         </div>
 
-        <div className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[11px] text-[#6E727A]">
+        <div className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[11px] text-[#9CA1AA]">
           <p>© {new Date().getFullYear()} Chethan Kumar B S. Built with authentic web standards.</p>
-          <div className="flex items-center space-x-2 text-[#A4A8AE]/70 font-mono text-[10px]">
+          <div className="flex items-center space-x-2 text-[#9CA1AA] font-mono text-[10px]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#A8B8A7]" />
             <span className="tabular-nums">GitHub index snapshot: {syncDate} ({projectsData.repositoryCount} repositories discovered)</span>
           </div>

@@ -83,7 +83,7 @@ export default function ContactPage() {
                     className="p-3.5 rounded-lg bg-[#14161A] border border-[rgba(255,255,255,0.06)] hover:border-[#A8B8A7]/40 transition-colors flex items-center justify-between group"
                   >
                     <div className="space-y-0.5">
-                      <span className="text-[10px] text-[#6E727A] uppercase tracking-wider block">LinkedIn</span>
+                      <span className="text-[10px] text-[#9CA1AA] uppercase tracking-wider block">LinkedIn</span>
                       <span className="text-[#F0F0ED] group-hover:text-[#A8B8A7] font-medium">Chethan Kumar</span>
                     </div>
                     <Linkedin className="w-4 h-4 text-[#A8B8A7]" />
@@ -96,7 +96,7 @@ export default function ContactPage() {
                     className="p-3.5 rounded-lg bg-[#14161A] border border-[rgba(255,255,255,0.06)] hover:border-[#A8B8A7]/40 transition-colors flex items-center justify-between group"
                   >
                     <div className="space-y-0.5">
-                      <span className="text-[10px] text-[#6E727A] uppercase tracking-wider block">GitHub</span>
+                      <span className="text-[10px] text-[#9CA1AA] uppercase tracking-wider block">GitHub</span>
                       <span className="text-[#F0F0ED] group-hover:text-[#A8B8A7] font-medium">StratagemVX</span>
                     </div>
                     <Github className="w-4 h-4 text-[#A8B8A7]" />
