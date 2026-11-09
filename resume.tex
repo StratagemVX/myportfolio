@@ -1,0 +1,136 @@
+\documentclass[a4paper,9pt]{article}
+\usepackage[top=0.22in,bottom=0.22in,left=0.38in,right=0.38in]{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{setspace}
+\usepackage{xcolor}
+
+\definecolor{primaryblue}{RGB}{20, 60, 135}
+\definecolor{lightgray}{RGB}{85, 85, 85}
+\definecolor{darktext}{RGB}{25, 25, 25}
+
+\setstretch{1.0}
+\hypersetup{
+    colorlinks=true,
+    urlcolor=primaryblue,
+    linkcolor=primaryblue
+}
+
+\titleformat{\section}
+{\normalfont\small\bfseries\color{primaryblue}}
+{}{0em}{\MakeUppercase}
+[\vspace{0.1em}{\color{primaryblue}\titlerule[0.7pt]}]
+
+\titlespacing*{\section}{0pt}{0.50ex}{0.30ex}
+\setlist[itemize]{noitemsep,topsep=1pt,parsep=0pt,partopsep=0pt,leftmargin=1.35em,label=\textbullet}
+\pagestyle{empty}
+
+\newcommand{\projecttitle}[2]{\noindent\textbf{#1} \hfill \textcolor{lightgray}{\small\textbf{#2}}}
+\newcommand{\projectsub}[2]{\noindent\textit{\small #1} \hfill \textcolor{lightgray}{\footnotesize\textit{#2}}}
+
+\begin{document}
+
+%----------------------------------------------------
+% HEADER
+%----------------------------------------------------
+\begin{center}
+{\LARGE\textbf{CHETHAN KUMAR B S}}\\[0.22em]
+\small 
+Bengaluru, Karnataka, India 
+$\;\vert\;$ 
++91 9380469287 
+$\;\vert\;$ 
+\href{mailto:chethan.athulith@outlook.com}{chethan.athulith@outlook.com} 
+$\;\vert\;$ 
+\href{https://chethankumar.dev}{chethankumar.dev} 
+$\;\vert\;$ 
+\href{https://github.com/StratagemVX}{github.com/StratagemVX} 
+$\;\vert\;$ 
+\href{https://linkedin.com/in/chethan-kumar-bs}{linkedin.com/in/chethan-kumar-bs}
+\end{center}
+
+%----------------------------------------------------
+% PROFESSIONAL SUMMARY
+%----------------------------------------------------
+\section*{Professional Summary}
+Computer Science Engineer and undergraduate (Final-Year / 2027 Batch, MVJCE / VTU) specializing in applied cryptography, hardware-accelerated deep learning pipelines, and resilient distributed software systems. Guided by the engineering ethos \textit{``Security First. Intelligence Always,''} with proven experience designing zero-trace client-side encryption architectures (AES-256-GCM, PBKDF2), training CUDA-accelerated risk classification models (PyTorch CUDA 12.1), and orchestrating high-concurrency real-time systems (WebSockets, Supabase/PostgreSQL, Row-Level Security). Author of 20 verified GitHub repositories grounded in mathematical first-principles, empirical benchmarking, and production software standards.
+
+%----------------------------------------------------
+% TECHNICAL SKILLS
+%----------------------------------------------------
+\section*{Technical Skills}
+\begin{itemize}
+\item \textbf{Languages \& Runtimes:} Python 3.12, TypeScript, JavaScript (ES6+), C++, Java, SQL (PostgreSQL, MySQL), HTML5, CSS3/Tailwind
+\item \textbf{Cybersecurity \& Applied Cryptography:} AES-256-GCM, PBKDF2 (SHA-256), Web Cryptography API, Zero-Knowledge Client Architecture, In-Memory Cipher Streams, OWASP Top 10, Threat Modeling, Role-Based Access Control (RBAC)
+\item \textbf{AI, ML \& NLP:} PyTorch (CUDA 12.1), TorchVision, TorchAudio, NumPy, Scikit-Learn, SymSpell, TextBlob, NLTK, OpenCV, Dynamic Programming (Levenshtein / Damerau-Levenshtein), First-Principles ML (ID3 Decision Trees, KNN, Backprop)
+\item \textbf{Full-Stack \& Distributed Systems:} React, Next.js, Vite, Node.js, Express.js, RESTful API Design, WebSockets (Supabase Realtime / Socket.io), Web Audio API, WebRTC MediaStreams, Microservices Architecture
+\item \textbf{Databases \& Infrastructure:} PostgreSQL, Supabase, MySQL, Redis, Database Normalization (3NF), Row-Level Security (RLS), ACID Transactions, Docker, Git, Linux/Bash, Vercel
+\end{itemize}
+
+%----------------------------------------------------
+% PROJECTS
+%----------------------------------------------------
+\section*{Key Engineering Projects}
+
+\projecttitle{PRISM — Deep Learning Predictive Risk Modeling Framework}{Python 3.12, PyTorch (CUDA 12.1), TorchVision, NumPy}
+\projectsub{Final Year Capstone Project — Hardware-Accelerated Anomaly Detection \& Risk Quantification}{GitHub: \href{https://github.com/StratagemVX/Major-Project}{StratagemVX/Major-Project}}
+\begin{itemize}
+\item Engineered a high-throughput deep neural network risk assessment pipeline leveraging PyTorch with native CUDA 12.1 GPU kernel memory caching and automatic CPU fallback routines.
+\item Built end-to-end data ingestion loaders executing multi-feature scaling, normalization, and outlier truncation across high-dimensional feature spaces with customizable loss functions.
+\item Designed automated model evaluation telemetry calculating real-time confusion matrices, ROC-AUC curves, and validation checkpoints during tensor training epochs.
+\item Overcame CUDA driver memory fragmentation on high-variance tensor structures, optimizing batch inference throughput for low-latency risk classification loops.
+\end{itemize}
+
+\vspace{0.32em}
+\projecttitle{SecretSnap — Zero-Trace Ephemeral Encrypted Messaging Suite}{TypeScript, React, Web Cryptography API, AES-256-GCM}
+\projectsub{Client-Side Zero-Knowledge Cryptographic Transmission Engine}{GitHub: \href{https://github.com/StratagemVX/Secret-snap}{StratagemVX/Secret-snap}}
+\begin{itemize}
+\item Architected a zero-knowledge communication channel executing client-side AES-256-GCM symmetric payload encryption and PBKDF2 key derivation strictly in client memory.
+\item Enforced client-side URI fragment hash key isolation (\texttt{\#}), mathematically guaranteeing zero server-side exposure of decryption key material across transport hops.
+\item Developed an automated single-view burn-after-reading verification hash and dynamic Time-To-Live (TTL) countdown triggers that purge payload data on read or timeout.
+\item Engineered defensive memory sanitization routines to wipe ephemeral cipher buffers within JavaScript's non-deterministic garbage collection lifecycle.
+\end{itemize}
+
+\vspace{0.32em}
+\projecttitle{SpellSense — Empirical NLP Spelling Intelligence \& Benchmarking Suite}{TypeScript, React, Python, SymSpell, TextBlob, Vite}
+\projectsub{Comparative Computational Linguistics \& Dynamic Programming Benchmarking Suite}{GitHub: \href{https://github.com/StratagemVX/spellSense-NLP_AAT}{StratagemVX/spellSense-NLP\_AAT}}
+\begin{itemize}
+\item Developed an empirical NLP benchmarking platform evaluating execution latency, candidate rank confidence, and memory footprints between SymSpell and TextBlob probabilistic models.
+\item Implemented real-time dynamic programming visualizers for Levenshtein and Damerau-Levenshtein distance matrices, enabling step-by-step matrix inspection with zero UI latency.
+\item Built real-time empirical telemetry stores logging sub-millisecond execution benchmarks ($<$1ms for SymSpell Symmetric Delete vs. $\sim$45ms for corpus search).
+\item Architected modular multi-page React/TypeScript routing with isolated testing suites and automated statistical scoring distribution curves.
+\end{itemize}
+
+\vspace{0.32em}
+\projecttitle{MediQueue — Real-Time Clinical Flow \& Hospital Queue Orchestrator}{React, TypeScript, Supabase, PostgreSQL, WebSockets}
+\projectsub{Distributed Multi-Portal Outpatient Throughput \& Triage Platform}{GitHub: \href{https://github.com/StratagemVX/Queue-buddy-final}{StratagemVX/Queue-buddy-final}}
+\begin{itemize}
+\item Designed a synchronized three-portal workflow system (Patient Token Tracker, Doctor Consultation Desk, Administrator Console) optimizing outpatient throughput.
+\item Implemented real-time bidirectional event propagation using Supabase WebSockets channels, streaming instant queue position transitions to patient browsers.
+\item Formulated normalized PostgreSQL relational schemas with Row-Level Security (RLS) policies and concurrency-safe token increment logic, eliminating race conditions under peak intake load.
+\item Engineered dynamic estimated wait-time algorithms calculating rolling averages based on historical consultation durations across departments.
+\end{itemize}
+
+%----------------------------------------------------
+% EDUCATION
+%----------------------------------------------------
+\section*{Education}
+\noindent
+\textbf{Bachelor of Engineering in Computer Science and Engineering} \hfill \textit{Expected 2027} \\
+\textnormal{MVJ College of Engineering, Bengaluru} $\;\vert\;$ \textnormal{Visvesvaraya Technological University (VTU)} \hfill \textit{Bengaluru, India} \\
+\small \textbf{Verified Coursework:} Data Structures \& Algorithms, Operating Systems \& Kernel Concepts, Database Management Systems (RDBMS), Computer Networks \& Protocols, Cryptography \& Network Security, Cyber Security, Deep Learning \& Neural Networks, Natural Language Processing (NLP), Cloud Computing \& Distributed Systems.
+
+%----------------------------------------------------
+% ACHIEVEMENTS & RIGOR
+%----------------------------------------------------
+\section*{Technical Achievements \& Engineering Rigor}
+\begin{itemize}
+\item \textbf{Verified Open-Source Portfolio:} Engineered 20 public GitHub repositories with 100\% factual transparency, genuine commit provenance, and verifiable technical proof (\href{https://github.com/StratagemVX}{github.com/StratagemVX}).
+\item \textbf{First-Principles Engineering:} Implemented foundational ML algorithms from scratch in Python/NumPy (ID3 Decision Trees with Shannon Entropy \& Information Gain, Neural Backpropagation gradient descent, HMM Viterbi POS decoding).
+\item \textbf{Production Systems \& Security Center:} Deployed personal engineering platform (\href{https://chethankumar.dev}{chethankumar.dev}) featuring cryptographic token-gated recruiter access, full audit logging, and automated GitHub API synchronization.
+\item \textbf{Algorithmic Problem Solving:} Solved 200+ Data Structures \& Algorithms problems across LeetCode and GeeksforGeeks, focusing on Graph Theory, Dynamic Programming, Trees, and Matrix Optimization.
+\end{itemize}
+
+\end{document}

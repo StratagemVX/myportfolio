@@ -1,0 +1,50 @@
+name: GitHub Portfolio Synchronisation
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # Daily at 04:00 UTC
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/sync-github.mjs'
+
+permissions:
+  contents: write
+
+jobs:
+  synchronize-portfolio:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Execute GitHub Intelligence Sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/sync-github.mjs
+
+      - name: Check for Project Index Changes
+        id: git-check
+        run: |
+          git config user.name "StratagemVX Sync Automation"
+          git config user.email "bot@stratagemvx.internal"
+          git add src/data/projects.json src/data/github-snapshot.json
+          git diff --staged --quiet || echo "has_changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit & Push Synchronised Repository State
+        if: steps.git-check.outputs.has_changes == 'true'
+        run: |
+          git commit -m "chore(sync): automated repository index update [skip ci]"
+          git push origin main

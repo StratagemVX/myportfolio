@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Public profile and project metadata: Read-only for all public visitors
+    match /public_profile/{document=**} {
+      allow read: if true;
+      allow write: if false; // Only updated via backend Firebase Admin SDK
+    }
+    
+    match /public_projects/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // Administrative owner profile: Protected from direct client read/write
+    match /owner_profile/{document=**} {
+      allow read: if false;
+      allow write: if false; // Only accessible by backend Admin SDK
+    }
+    
+    // Security audit logs: Strictly protected, write-only from trusted backend
+    match /audit_logs/{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+    
+    // Recruiter tokens: Only accessed by backend hash-verification
+    match /recruiter_tokens/{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+    
+    // Notification audit events & preferences: Server-side only
+    match /notifications/{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+    
+    // FCM Device Subscriptions: Managed exclusively by backend
+    match /fcm_tokens/{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+    
+    // Default Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
