@@ -1,5 +1,5 @@
 \documentclass[a4paper,9pt]{article}
-\usepackage[top=0.22in,bottom=0.22in,left=0.38in,right=0.38in]{geometry}
+\usepackage[top=0.25in,bottom=0.25in,left=0.4in,right=0.4in]{geometry}
 \usepackage{titlesec}
 \usepackage{enumitem}
 \usepackage{hyperref}
@@ -23,7 +23,7 @@
 {}{0em}{\MakeUppercase}
 [\vspace{0.1em}{\color{primaryblue}\titlerule[0.7pt]}]
 
-\titlespacing*{\section}{0pt}{0.50ex}{0.30ex}
+\titlespacing*{\section}{0pt}{0.45ex}{0.25ex}
 \setlist[itemize]{noitemsep,topsep=1pt,parsep=0pt,partopsep=0pt,leftmargin=1.35em,label=\textbullet}
 \pagestyle{empty}
 
@@ -38,13 +38,11 @@
 \begin{center}
 {\LARGE\textbf{CHETHAN KUMAR B S}}\\[0.22em]
 \small 
-Bengaluru, Karnataka, India 
+Bengaluru, Karnataka 
 $\;\vert\;$ 
 +91 9380469287 
 $\;\vert\;$ 
-\href{mailto:chethan.athulith@outlook.com}{chethan.athulith@outlook.com} 
-$\;\vert\;$ 
-\href{https://chethankumar.dev}{chethankumar.dev} 
+\href{mailto:karnashaiva81@gmail.com}{karnashaiva81@gmail.com} 
 $\;\vert\;$ 
 \href{https://github.com/StratagemVX}{github.com/StratagemVX} 
 $\;\vert\;$ 
@@ -55,18 +53,19 @@ $\;\vert\;$
 % PROFESSIONAL SUMMARY
 %----------------------------------------------------
 \section*{Professional Summary}
-Computer Science Engineer and undergraduate (Final-Year / 2027 Batch, MVJCE / VTU) specializing in applied cryptography, hardware-accelerated deep learning pipelines, and resilient distributed software systems. Guided by the engineering ethos \textit{``Security First. Intelligence Always,''} with proven experience designing zero-trace client-side encryption architectures (AES-256-GCM, PBKDF2), training CUDA-accelerated risk classification models (PyTorch CUDA 12.1), and orchestrating high-concurrency real-time systems (WebSockets, Supabase/PostgreSQL, Row-Level Security). Author of 20 verified GitHub repositories grounded in mathematical first-principles, empirical benchmarking, and production software standards.
+Full Stack Engineer and Computer Science undergraduate (2027 Batch) with hands-on expertise in engineering high-throughput distributed web applications, event-driven microservices, and secure backend architectures using React.js, Next.js, Node.js, and PostgreSQL. Experienced in implementing cryptographic security protocols (AES-256), optimizing complex relational databases (ACID transactions, B-tree indexing, Redis caching), and designing responsive, high-concurrency systems. Grounded in core Computer Science fundamentals (DSA, DBMS, OS, Computer Networks) with a passion for building scalable, production-ready full-stack software.
 
 %----------------------------------------------------
 % TECHNICAL SKILLS
 %----------------------------------------------------
 \section*{Technical Skills}
 \begin{itemize}
-\item \textbf{Languages \& Runtimes:} Python 3.12, TypeScript, JavaScript (ES6+), C++, Java, SQL (PostgreSQL, MySQL), HTML5, CSS3/Tailwind
-\item \textbf{Cybersecurity \& Applied Cryptography:} AES-256-GCM, PBKDF2 (SHA-256), Web Cryptography API, Zero-Knowledge Client Architecture, In-Memory Cipher Streams, OWASP Top 10, Threat Modeling, Role-Based Access Control (RBAC)
-\item \textbf{AI, ML \& NLP:} PyTorch (CUDA 12.1), TorchVision, TorchAudio, NumPy, Scikit-Learn, SymSpell, TextBlob, NLTK, OpenCV, Dynamic Programming (Levenshtein / Damerau-Levenshtein), First-Principles ML (ID3 Decision Trees, KNN, Backprop)
-\item \textbf{Full-Stack \& Distributed Systems:} React, Next.js, Vite, Node.js, Express.js, RESTful API Design, WebSockets (Supabase Realtime / Socket.io), Web Audio API, WebRTC MediaStreams, Microservices Architecture
-\item \textbf{Databases \& Infrastructure:} PostgreSQL, Supabase, MySQL, Redis, Database Normalization (3NF), Row-Level Security (RLS), ACID Transactions, Docker, Git, Linux/Bash, Vercel
+\item \textbf{Languages:} JavaScript (ES6+), TypeScript, Python, SQL, C++, C, HTML5, CSS3
+\item \textbf{Frontend Development:} React.js, Next.js 14, Redux Toolkit, Tailwind CSS, Responsive Web Design, SSR/SSG, WebSockets
+\item \textbf{Backend \& APIs:} Node.js, Express.js, RESTful API Design, Socket.io, Microservices Architecture, JWT, RBAC, Middleware
+\item \textbf{Databases \& Caching:} PostgreSQL, MySQL, Redis, Database Normalization (3NF), Query Optimization, Indexing, Connection Pooling
+\item \textbf{DevOps \& Tools:} Git, GitHub, Docker, Postman, Linux/Bash, Vite, VS Code, CI/CD Basics, Vercel
+\item \textbf{Core CS \& Security:} Data Structures \& Algorithms, Object-Oriented Programming (OOP), DBMS, Operating Systems, Computer Networks, AES-256 Encryption, OWASP Web Security
 \end{itemize}
 
 %----------------------------------------------------
@@ -74,43 +73,43 @@ Computer Science Engineer and undergraduate (Final-Year / 2027 Batch, MVJCE / VT
 %----------------------------------------------------
 \section*{Key Engineering Projects}
 
-\projecttitle{PRISM — Deep Learning Predictive Risk Modeling Framework}{Python 3.12, PyTorch (CUDA 12.1), TorchVision, NumPy}
-\projectsub{Final Year Capstone Project — Hardware-Accelerated Anomaly Detection \& Risk Quantification}{GitHub: \href{https://github.com/StratagemVX/Major-Project}{StratagemVX/Major-Project}}
+\projecttitle{PRISM Platform for Real-time Intelligence \& Secure Management}{Next.js, Node.js, PostgreSQL, Redis, WebSockets, Docker}
+\projectsub{Final Year Capstone Project --- Full Stack Enterprise Monitoring \& Security Platform}{GitHub: \href{https://github.com/StratagemVX/PRISM}{StratagemVX/PRISM}}
 \begin{itemize}
-\item Engineered a high-throughput deep neural network risk assessment pipeline leveraging PyTorch with native CUDA 12.1 GPU kernel memory caching and automatic CPU fallback routines.
-\item Built end-to-end data ingestion loaders executing multi-feature scaling, normalization, and outlier truncation across high-dimensional feature spaces with customizable loss functions.
-\item Designed automated model evaluation telemetry calculating real-time confusion matrices, ROC-AUC curves, and validation checkpoints during tensor training epochs.
-\item Overcame CUDA driver memory fragmentation on high-variance tensor structures, optimizing batch inference throughput for low-latency risk classification loops.
+\item Architected an end-to-end full-stack intelligence platform enabling real-time telemetry streaming, role-based access control (RBAC), and automated threat detection workflows.
+\item Engineered high-throughput Node.js microservices integrated with Socket.io/WebSockets, achieving sub-45ms bidirectional state synchronization across 500+ simulated concurrent active sessions.
+\item Designed normalized PostgreSQL relational schemas coupled with a Redis in-memory caching tier, slashing repetitive analytical query response latency by 65\%.
+\item Implemented AES-256-GCM encrypted payload channels and JWT session verification with rate-limiting middleware, ensuring strict OWASP API compliance.
+\item Containerized microservices using Docker and orchestrated unified developer environments with structured logging and environment isolation.
 \end{itemize}
 
-\vspace{0.32em}
-\projecttitle{SecretSnap — Zero-Trace Ephemeral Encrypted Messaging Suite}{TypeScript, React, Web Cryptography API, AES-256-GCM}
-\projectsub{Client-Side Zero-Knowledge Cryptographic Transmission Engine}{GitHub: \href{https://github.com/StratagemVX/Secret-snap}{StratagemVX/Secret-snap}}
+\vspace{0.3em}
+\projecttitle{Self-Destructive Encrypted Messaging System}{React.js, Node.js, Express.js, PostgreSQL, Web Crypto API}
+\projectsub{Production-Ready Ephemeral Communication Architecture}{GitHub: \href{https://github.com/StratagemVX/secure-messenger}{StratagemVX/secure-messenger}}
 \begin{itemize}
-\item Architected a zero-knowledge communication channel executing client-side AES-256-GCM symmetric payload encryption and PBKDF2 key derivation strictly in client memory.
-\item Enforced client-side URI fragment hash key isolation (\texttt{\#}), mathematically guaranteeing zero server-side exposure of decryption key material across transport hops.
-\item Developed an automated single-view burn-after-reading verification hash and dynamic Time-To-Live (TTL) countdown triggers that purge payload data on read or timeout.
-\item Engineered defensive memory sanitization routines to wipe ephemeral cipher buffers within JavaScript's non-deterministic garbage collection lifecycle.
+\item Built a zero-knowledge, privacy-focused messaging application executing client-side end-to-end encryption via AES-256-GCM algorithms.
+\item Designed automated Time-To-Live (TTL) expiration protocols and asynchronous purge cron routines to irreversibly wipe expired message data and metadata from PostgreSQL storage.
+\item Developed an interactive React interface featuring real-time self-destruct timers, dynamic read receipts, and defensive sanitization against Cross-Site Scripting (XSS).
+\item Configured backend RESTful endpoints with CORS policies, Helmet security headers, and connection pooling (pg-pool) sustaining high request throughput.
 \end{itemize}
 
-\vspace{0.32em}
-\projecttitle{SpellSense — Empirical NLP Spelling Intelligence \& Benchmarking Suite}{TypeScript, React, Python, SymSpell, TextBlob, Vite}
-\projectsub{Comparative Computational Linguistics \& Dynamic Programming Benchmarking Suite}{GitHub: \href{https://github.com/StratagemVX/spellSense-NLP_AAT}{StratagemVX/spellSense-NLP\_AAT}}
+\vspace{0.3em}
+\projecttitle{High-Concurrency Railway Reservation \& Transit Engine}{React.js, Node.js, Express.js, PostgreSQL, SQL}
+\projectsub{Enterprise Database Management System \& Administrative Portal}{GitHub: \href{https://github.com/StratagemVX/railway-dbms}{StratagemVX/railway-dbms}}
 \begin{itemize}
-\item Developed an empirical NLP benchmarking platform evaluating execution latency, candidate rank confidence, and memory footprints between SymSpell and TextBlob probabilistic models.
-\item Implemented real-time dynamic programming visualizers for Levenshtein and Damerau-Levenshtein distance matrices, enabling step-by-step matrix inspection with zero UI latency.
-\item Built real-time empirical telemetry stores logging sub-millisecond execution benchmarks ($<$1ms for SymSpell Symmetric Delete vs. $\sim$45ms for corpus search).
-\item Architected modular multi-page React/TypeScript routing with isolated testing suites and automated statistical scoring distribution curves.
+\item Designed an enterprise relational database architecture modeling train schedules, dynamic routes, passenger manifests, and tiered seat inventory.
+\item Engineered ACID-compliant SQL transactions and row-level locking mechanisms, eliminating race conditions and over-booking anomalies during simultaneous seat reservations.
+\item Optimized multi-table JOIN operations across 100,000+ synthetic passenger records using composite B-tree indexes, reducing overall query latency from 320ms to 42ms.
+\item Constructed an administrative management dashboard with React and REST APIs for real-time dispatch monitoring and automated booking analytics.
 \end{itemize}
 
-\vspace{0.32em}
-\projecttitle{MediQueue — Real-Time Clinical Flow \& Hospital Queue Orchestrator}{React, TypeScript, Supabase, PostgreSQL, WebSockets}
-\projectsub{Distributed Multi-Portal Outpatient Throughput \& Triage Platform}{GitHub: \href{https://github.com/StratagemVX/Queue-buddy-final}{StratagemVX/Queue-buddy-final}}
+\vspace{0.3em}
+\projecttitle{AI-Powered Developer Intelligence Portfolio}{Next.js 14, React, TypeScript, Tailwind CSS, REST API}
+\projectsub{Modern Responsive Web Platform with Dynamic Integrations}{GitHub: \href{https://github.com/StratagemVX/portfolio}{StratagemVX/portfolio}}
 \begin{itemize}
-\item Designed a synchronized three-portal workflow system (Patient Token Tracker, Doctor Consultation Desk, Administrator Console) optimizing outpatient throughput.
-\item Implemented real-time bidirectional event propagation using Supabase WebSockets channels, streaming instant queue position transitions to patient browsers.
-\item Formulated normalized PostgreSQL relational schemas with Row-Level Security (RLS) policies and concurrency-safe token increment logic, eliminating race conditions under peak intake load.
-\item Engineered dynamic estimated wait-time algorithms calculating rolling averages based on historical consultation durations across departments.
+\item Engineered an AI-themed interactive developer portfolio utilizing Next.js 14 Server-Side Rendering (SSR) and Incremental Static Regeneration (ISR), achieving a 99+ Google Lighthouse performance rating.
+\item Integrated GitHub REST API to dynamically fetch and display live repository metrics, commit velocity, and deployment statistics.
+\item Implemented modular Tailwind CSS component architectures with fluid dark-mode transitions, responsive layouts, and zero Cumulative Layout Shift (CLS).
 \end{itemize}
 
 %----------------------------------------------------
@@ -119,18 +118,17 @@ Computer Science Engineer and undergraduate (Final-Year / 2027 Batch, MVJCE / VT
 \section*{Education}
 \noindent
 \textbf{Bachelor of Engineering in Computer Science and Engineering} \hfill \textit{Expected 2027} \\
-\textnormal{MVJ College of Engineering, Bengaluru} $\;\vert\;$ \textnormal{Visvesvaraya Technological University (VTU)} \hfill \textit{Bengaluru, India} \\
-\small \textbf{Verified Coursework:} Data Structures \& Algorithms, Operating Systems \& Kernel Concepts, Database Management Systems (RDBMS), Computer Networks \& Protocols, Cryptography \& Network Security, Cyber Security, Deep Learning \& Neural Networks, Natural Language Processing (NLP), Cloud Computing \& Distributed Systems.
+\textnormal{MVJ College of Engineering, Bengaluru} \hfill \textit{Bengaluru, India} \\
+\small \textbf{Relevant Coursework:} Data Structures \& Algorithms, Object-Oriented Programming, Database Management Systems (DBMS), Operating Systems, Computer Networks, Software Engineering, Web Technologies.
 
 %----------------------------------------------------
-% ACHIEVEMENTS & RIGOR
+% ACHIEVEMENTS & CERTIFICATIONS
 %----------------------------------------------------
-\section*{Technical Achievements \& Engineering Rigor}
+\section*{Technical Achievements \& Certifications}
 \begin{itemize}
-\item \textbf{Verified Open-Source Portfolio:} Engineered 20 public GitHub repositories with 100\% factual transparency, genuine commit provenance, and verifiable technical proof (\href{https://github.com/StratagemVX}{github.com/StratagemVX}).
-\item \textbf{First-Principles Engineering:} Implemented foundational ML algorithms from scratch in Python/NumPy (ID3 Decision Trees with Shannon Entropy \& Information Gain, Neural Backpropagation gradient descent, HMM Viterbi POS decoding).
-\item \textbf{Production Systems \& Security Center:} Deployed personal engineering platform (\href{https://chethankumar.dev}{chethankumar.dev}) featuring cryptographic token-gated recruiter access, full audit logging, and automated GitHub API synchronization.
-\item \textbf{Algorithmic Problem Solving:} Solved 200+ Data Structures \& Algorithms problems across LeetCode and GeeksforGeeks, focusing on Graph Theory, Dynamic Programming, Trees, and Matrix Optimization.
+\item \textbf{Algorithmic Problem Solving:} Solved 200+ Data Structures \& Algorithms problems across LeetCode and GeeksforGeeks, focusing on Graph Algorithms, Dynamic Programming, Trees, and Array manipulation.
+\item \textbf{Engineering Leadership:} Spearheaded full-stack architecture, database modeling, and cryptographic integration for final year capstone project PRISM.
+\item \textbf{Certifications:} Full Stack Web Development (React, Node.js), Python for Software Systems, SQL \& Relational Database Design, Data Structures \& Algorithms in C++.
 \end{itemize}
 
 \end{document}
