@@ -63,3 +63,24 @@ npm run build
 - **GitHub:** [https://github.com/StratagemVX](https://github.com/StratagemVX)
 - **Live Portfolio:** [https://chethan-kumar-portfolio.vercel.app/](https://chethan-kumar-portfolio.vercel.app/)
 - **LinkedIn:** [https://linkedin.com/in/chethan-kumar-b-s-781a002bb](https://linkedin.com/in/chethan-kumar-b-s-781a002bb)
+
+## Verification and maintenance
+
+Keep the NLP model/algorithm description, data and evaluation claims, dependencies, and setup instructions aligned with the implementation. Clearly separate measured results from intended capabilities.
+
+### Available package scripts
+
+- `npm run dev` — `vite`
+- `npm run build` — `tsc && vite build && node scripts/generate-static-pages.mjs && npm run build:api`
+- `npm run test` — `vitest run`
+- `npm run preview` — `vite preview`
+
+These commands are declared in the package manifest; they have not been executed as part of this documentation update.
+
+### Contribution and security notes
+
+- Document model assumptions, training/evaluation data, and known limitations where relevant.
+- Never commit credentials, private keys, personal data, or local environment files.
+- Use placeholder-only examples and deployment-managed secrets.
+- Include reproducible issue steps and expected/actual results.
+- Run relevant build, lint, and test checks before merging.
