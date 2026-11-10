@@ -231,18 +231,16 @@ var SecurityStateManager = class {
       }
     }
   }
-  verifyAndConsumeWebAuthnChallenge(challenge, type) {
+  isWebAuthnChallengeValid(challenge, type, userId) {
     if (!challenge) return false;
     const entry = this.webauthnChallenges.get(challenge);
-    if (entry && entry.type === type && Date.now() <= entry.expiresAt) {
-      this.webauthnChallenges.delete(challenge);
-      if (this.currentWebAuthnChallenge === challenge) {
-        this.currentWebAuthnChallenge = null;
-      }
-      return true;
-    }
-    // Reject missing, expired, mismatched-type, and replayed challenges.
-    return false;
+    return Boolean(entry && entry.type === type && Date.now() <= entry.expiresAt && (!userId || entry.userId === userId));
+  }
+  verifyAndConsumeWebAuthnChallenge(challenge, type, userId) {
+    if (!this.isWebAuthnChallengeValid(challenge, type, userId)) return false;
+    this.webauthnChallenges.delete(challenge);
+    if (this.currentWebAuthnChallenge === challenge) this.currentWebAuthnChallenge = null;
+    return true;
   }
   constructor() {
     this.state = this.loadState();
@@ -2894,8 +2892,8 @@ async function handleApiRequest(req, res) {
     const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
     const expectedChallenge = stateManager.currentWebAuthnChallenge;
-    if (!expectedChallenge) {
-      sendJson(res, 400, { error: "No active WebAuthn login challenge found." });
+    if (!stateManager.isWebAuthnChallengeValid(expectedChallenge, "authentication", state.owner.id)) {
+      sendJson(res, 400, { error: "No active, valid WebAuthn login challenge found." });
       return true;
     }
     const passkey = stateManager.getEnrolledPasskeys().find((p) => p.id === authResp.id);
@@ -2918,8 +2916,11 @@ async function handleApiRequest(req, res) {
         requireUserVerification: false
       });
       if (verification.verified) {
+        if (!stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, "authentication", state.owner.id)) {
+          sendJson(res, 400, { error: "WebAuthn login challenge expired or already used." });
+          return true;
+        }
         stateManager.touchPasskey(passkey.id, verification.authenticationInfo.newCounter);
-        stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, "authentication");
         if (challengeToken) {
           stateManager.pendingLoginChallenges.delete(challengeToken);
         }
@@ -3536,8 +3537,8 @@ async function handleApiRequest(req, res) {
     const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
     const expectedChallenge = stateManager.currentWebAuthnChallenge;
-    if (!expectedChallenge) {
-      sendJson(res, 400, { error: "No active WebAuthn registration challenge found." });
+    if (!stateManager.isWebAuthnChallengeValid(expectedChallenge, "registration", state.owner.id)) {
+      sendJson(res, 400, { error: "No active, valid WebAuthn registration challenge found." });
       return true;
     }
     try {
@@ -3567,8 +3568,11 @@ async function handleApiRequest(req, res) {
           lastUsedAtIST: null,
           revoked: false
         };
+        if (!stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, "registration", state.owner.id)) {
+          sendJson(res, 400, { error: "WebAuthn registration challenge expired or already used." });
+          return true;
+        }
         const result = stateManager.addPasskey(passkeyEntry);
-        stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, "registration");
         stateManager.addAuditLog({
           action: "PASSKEY_ENROLLED",
           category: "PASSKEY",
