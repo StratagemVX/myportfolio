@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Github, ShieldCheck, Cpu, Database } from 'lucide-react';
 import projectsData from '../data/projects.json';
+import SEOHead from '../components/SEOHead';
+import { STATIC_ROUTES_SEO } from '../data/seoConfig';
 
 export default function EvidencePage() {
   const evidenceMatrix = [
@@ -80,6 +82,7 @@ export default function EvidencePage() {
 
   return (
     <div className="py-12 sm:py-16 space-y-16">
+      <SEOHead {...STATIC_ROUTES_SEO['/evidence']} />
       <div className="site-container space-y-12">
         {/* Header */}
         <header className="border-b border-[rgba(255,255,255,0.08)] pb-8 space-y-3">

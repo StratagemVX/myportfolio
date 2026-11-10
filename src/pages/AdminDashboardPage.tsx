@@ -15,6 +15,8 @@ import PrivateRecruiterAccessSection from '../components/admin/PrivateRecruiterA
 import IntegrationMatrixSection from '../components/admin/IntegrationMatrixSection';
 import { apiClient } from '../services/apiClient';
 import type { OwnerSecurityProfile } from '../../server/types';
+import SEOHead from '../components/SEOHead';
+import { STATIC_ROUTES_SEO } from '../data/seoConfig';
 
 type AdminView = 'CONSOLE' | 'SECURITY' | 'RECRUITER' | 'INTEGRATIONS';
 
@@ -59,11 +61,17 @@ export default function AdminDashboardPage() {
   };
 
   if (!isAuthenticated) {
-    return <SecurityGate onAuthenticated={handleAuthenticated} />;
+    return (
+      <>
+        <SEOHead {...STATIC_ROUTES_SEO['/admin']} />
+        <SecurityGate onAuthenticated={handleAuthenticated} />
+      </>
+    );
   }
 
   return (
     <div className="py-14 sm:py-20 space-y-10 font-mono text-xs">
+      <SEOHead {...STATIC_ROUTES_SEO['/admin']} />
       <div className="site-container space-y-8">
         {/* Top Header Bar */}
         <div className="border-b border-[rgba(255,255,255,0.08)] pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

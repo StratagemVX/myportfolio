@@ -2,6 +2,8 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Github, ExternalLink, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import projectsData from '../data/projects.json';
 import MermaidDiagram from '../components/MermaidDiagram';
+import SEOHead from '../components/SEOHead';
+import { getProjectSEO } from '../data/seoConfig';
 
 export default function ProjectDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -30,6 +32,7 @@ export default function ProjectDetailPage() {
 
   return (
     <article className="py-12 sm:py-16 space-y-14">
+      <SEOHead {...getProjectSEO(project)} />
       <div className="site-container space-y-12">
         {/* Back Link */}
         <div>

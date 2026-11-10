@@ -40,7 +40,7 @@ export default defineConfig(({ command }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: true,
+      sourcemap: false,
       rollupOptions: {
         output: {
           manualChunks: {

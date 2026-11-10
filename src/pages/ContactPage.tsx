@@ -1,5 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Mail, Github, Linkedin, Copy, Check, Send, MapPin, Clock, ShieldCheck } from 'lucide-react';
+import SEOHead from '../components/SEOHead';
+import { STATIC_ROUTES_SEO } from '../data/seoConfig';
 
 export default function ContactPage() {
   const [copied, setCopied] = useState(false);
@@ -30,6 +32,7 @@ export default function ContactPage() {
 
   return (
     <div className="py-12 sm:py-16 space-y-16">
+      <SEOHead {...STATIC_ROUTES_SEO['/contact']} />
       <div className="site-container space-y-12">
         {/* Header */}
         <header className="border-b border-[rgba(255,255,255,0.08)] pb-8 space-y-3">

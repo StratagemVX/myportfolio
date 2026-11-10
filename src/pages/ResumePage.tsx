@@ -1,4 +1,6 @@
 import { Download, Printer, ExternalLink, FileText, ArrowUpRight } from 'lucide-react';
+import SEOHead from '../components/SEOHead';
+import { STATIC_ROUTES_SEO } from '../data/seoConfig';
 
 export default function ResumePage() {
   const handlePrint = () => {
@@ -7,6 +9,7 @@ export default function ResumePage() {
 
   return (
     <div className="py-12 sm:py-16 space-y-14">
+      <SEOHead {...STATIC_ROUTES_SEO['/resume']} />
       <div className="site-container space-y-10">
         {/* Header Bar */}
         <header className="border-b border-[rgba(255,255,255,0.08)] pb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build:api": "esbuild api/serverless.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=api/index.js",
-    "build": "tsc && vite build && npm run build:api",
+    "build": "tsc && vite build && node scripts/generate-static-pages.mjs && npm run build:api",
     "preview": "vite preview",
     "server": "vite-node server/index.ts",
     "start:server": "vite-node server/index.ts",

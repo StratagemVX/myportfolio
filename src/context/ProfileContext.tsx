@@ -48,7 +48,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    fetchProfile();
+    // Only invoke API profile synchronization if an active owner session exists or on admin route,
+    // avoiding unnecessary critical-path network latency and re-renders for public visitors.
+    if (typeof window !== 'undefined' && (apiClient.getSessionToken() || window.location.pathname.startsWith('/admin'))) {
+      fetchProfile();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const updateProfile = async (updates: {

@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import projectsData from '../data/projects.json';
 import EngineeringWorkbench from '../components/home/EngineeringWorkbench';
+import SEOHead from '../components/SEOHead';
+import { STATIC_ROUTES_SEO } from '../data/seoConfig';
 
 export default function HomePage() {
   const featuredProjects = projectsData.projects.filter(p => p.isFeatured).slice(0, 4);
@@ -50,6 +52,7 @@ export default function HomePage() {
 
   return (
     <div className="py-12 sm:py-16 space-y-24">
+      <SEOHead {...STATIC_ROUTES_SEO['/']} />
       <div className="site-container space-y-24">
         {/* Editorial Hero: Asymmetric 2-Column Grid */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center pt-2 sm:pt-6">

@@ -2,6 +2,8 @@ import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Download, ShieldCheck, Printer, CheckCircle2, Lock, ArrowUpRight } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
+import SEOHead from '../components/SEOHead';
+import { STATIC_ROUTES_SEO } from '../data/seoConfig';
 
 export default function RecruiterBriefPage() {
   const [token, setToken] = useState('');
@@ -47,6 +49,7 @@ export default function RecruiterBriefPage() {
 
   return (
     <div className="py-12 sm:py-16 space-y-16">
+      <SEOHead {...STATIC_ROUTES_SEO['/recruiter-brief']} />
       <div className="site-container space-y-12">
         {/* Recruiter Brief Header */}
         <header className="border-b border-[rgba(255,255,255,0.08)] pb-8 flex flex-col lg:flex-row lg:items-end justify-between gap-6">

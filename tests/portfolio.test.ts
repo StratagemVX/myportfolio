@@ -94,4 +94,147 @@ describe('Chethan Kumar Portfolio Data Integrity & Route Architecture Tests', ()
     expect(headerKeys).toContain('X-Frame-Options');
     expect(headerKeys).toContain('X-Content-Type-Options');
   });
+
+  it('validates improved SEO metadata configuration for all public routes', async () => {
+    const { STATIC_ROUTES_SEO, SITE_URL } = await import('../src/data/seoConfig');
+    
+    // 1. Homepage
+    const home = STATIC_ROUTES_SEO['/'];
+    expect(home.title).toBe('Chethan Kumar | AI, Cybersecurity & Software Engineering');
+    expect(home.title.length).toBe(56);
+    expect(home.description).toBe('Explore Chethan Kumar’s engineering portfolio: AI, NLP, cybersecurity, cryptography and software projects with implementation evidence and source code.');
+    expect(home.description.length).toBe(151);
+    expect(home.canonical).toBe(`${SITE_URL}/`);
+    expect(home.robots).toBe('index, follow, max-image-preview:large');
+
+    // 2. Work
+    const work = STATIC_ROUTES_SEO['/work'];
+    expect(work.title).toBe('Engineering Projects | Chethan Kumar');
+    expect(work.description).toBe('Explore Chethan Kumar’s software projects across AI, cybersecurity, NLP and full-stack engineering, with project details and source-code links.');
+    expect(work.canonical).toBe(`${SITE_URL}/work`);
+    expect(work.robots).toBe('index, follow, max-image-preview:large');
+
+    // 3. Evidence
+    const evidence = STATIC_ROUTES_SEO['/evidence'];
+    expect(evidence.title).toBe('Technical Evidence | Chethan Kumar');
+    expect(evidence.description).toBe('Review the technologies, implementation details and GitHub source-code evidence behind Chethan Kumar’s engineering projects.');
+    expect(evidence.canonical).toBe(`${SITE_URL}/evidence`);
+
+    // 4. Archive
+    const archive = STATIC_ROUTES_SEO['/archive'];
+    expect(archive.title).toBe('Project Archive | Chethan Kumar');
+    expect(archive.description).toBe('Browse Chethan Kumar’s public engineering repositories, experiments and academic projects, organised by technology and project area.');
+    expect(archive.canonical).toBe(`${SITE_URL}/archive`);
+
+    // 5. Recruiter Brief
+    const recruiter = STATIC_ROUTES_SEO['/recruiter-brief'];
+    expect(recruiter.title).toBe('Recruiter Brief | Chethan Kumar');
+    expect(recruiter.description).toBe('Review Chethan Kumar’s computer science background, technical interests, selected engineering projects and verified implementation evidence.');
+    expect(recruiter.canonical).toBe(`${SITE_URL}/recruiter-brief`);
+
+    // 6. Academics
+    const academics = STATIC_ROUTES_SEO['/academics'];
+    expect(academics.title).toBe('Academics | Chethan Kumar');
+    expect(academics.description).toBe('Explore Chethan Kumar’s computer science education, relevant coursework and academic engineering projects at MVJ College of Engineering.');
+    expect(academics.canonical).toBe(`${SITE_URL}/academics`);
+
+    // 7. Contact
+    const contact = STATIC_ROUTES_SEO['/contact'];
+    expect(contact.title).toBe('Contact Chethan Kumar');
+    expect(contact.description).toBe('Contact Chethan Kumar about software engineering opportunities, technical projects, collaboration or professional discussions.');
+    expect(contact.canonical).toBe(`${SITE_URL}/contact`);
+
+    // 8. Resume
+    const resume = STATIC_ROUTES_SEO['/resume'];
+    expect(resume.title).toBe('Résumé | Chethan Kumar');
+    expect(resume.description).toBe('View or download Chethan Kumar’s résumé, with education, technical skills, selected projects and verified professional details.');
+    expect(resume.canonical).toBe(`${SITE_URL}/resume`);
+
+    // 9. Admin (Private)
+    const admin = STATIC_ROUTES_SEO['/admin'];
+    expect(admin.robots).toBe('noindex, nofollow');
+  });
+
+  it('validates HTTP X-Robots-Tag routing rules in vercel.json', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const vercelConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'vercel.json'), 'utf-8'));
+    
+    // Public routes receive index, follow
+    const publicRobots = vercelConfig.headers.find((h: any) => h.source.includes('?!admin|api'));
+    expect(publicRobots).toBeDefined();
+    const publicHeader = publicRobots.headers.find((hdr: any) => hdr.key === 'X-Robots-Tag');
+    expect(publicHeader?.value).toBe('index, follow, max-image-preview:large');
+
+    // Admin receives noindex, nofollow
+    const adminRobots = vercelConfig.headers.find((h: any) => h.source === '/admin(.*)');
+    expect(adminRobots).toBeDefined();
+    const adminHeader = adminRobots.headers.find((hdr: any) => hdr.key === 'X-Robots-Tag');
+    expect(adminHeader?.value).toBe('noindex, nofollow');
+
+    // API receives noindex, nofollow
+    const apiRobots = vercelConfig.headers.find((h: any) => h.source === '/api/(.*)');
+    expect(apiRobots).toBeDefined();
+    const apiHeader = apiRobots.headers.find((hdr: any) => hdr.key === 'X-Robots-Tag');
+    expect(apiHeader?.value).toBe('noindex, nofollow');
+
+    // Raw PDF is excluded from index to canonicalize /resume HTML page
+    const pdfRobots = vercelConfig.headers.find((h: any) => h.source === '/resume.pdf');
+    expect(pdfRobots).toBeDefined();
+    const pdfHeader = pdfRobots.headers.find((hdr: any) => hdr.key === 'X-Robots-Tag');
+    expect(pdfHeader?.value).toBe('noindex');
+  });
+
+  it('validates self-hosted fonts and zero external Google Font CDN dependency', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    // Font files exist in public/fonts
+    const fontFiles = [
+      'inter-latin.woff2',
+      'space-grotesk-latin.woff2',
+      'jetbrains-mono-latin.woff2'
+    ];
+
+    for (const file of fontFiles) {
+      const fontPath = path.join(process.cwd(), 'public', 'fonts', file);
+      expect(fs.existsSync(fontPath)).toBe(true);
+      expect(fs.statSync(fontPath).size).toBeGreaterThan(15000);
+    }
+
+    // index.html does not connect to external Google Fonts CDN
+    const indexHtml = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf-8');
+    expect(indexHtml).not.toContain('fonts.googleapis.com');
+    expect(indexHtml).not.toContain('fonts.gstatic.com');
+    expect(indexHtml).toContain('/fonts/space-grotesk-latin.woff2');
+    expect(indexHtml).toContain('/fonts/inter-latin.woff2');
+  });
+
+  it('validates generated static HTML files for all core routes with unique metadata', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const expectedRoutes = [
+      { file: 'index.html', title: 'Chethan Kumar | AI, Cybersecurity & Software Engineering' },
+      { file: 'work/index.html', title: 'Engineering Projects | Chethan Kumar' },
+      { file: 'evidence/index.html', title: 'Technical Evidence | Chethan Kumar' },
+      { file: 'archive/index.html', title: 'Project Archive | Chethan Kumar' },
+      { file: 'recruiter-brief/index.html', title: 'Recruiter Brief | Chethan Kumar' },
+      { file: 'academics/index.html', title: 'Academics | Chethan Kumar' },
+      { file: 'contact/index.html', title: 'Contact Chethan Kumar' },
+      { file: 'resume/index.html', title: 'Résumé | Chethan Kumar' }
+    ];
+
+    for (const r of expectedRoutes) {
+      const filePath = path.join(process.cwd(), 'dist', r.file);
+      expect(fs.existsSync(filePath), `Static file ${r.file} must exist`).toBe(true);
+      const content = fs.readFileSync(filePath, 'utf-8');
+      expect(content).toContain(`<title>${r.title}</title>`);
+      expect(content).toContain('name="robots" content="index, follow, max-image-preview:large"');
+      expect(content).toContain('property="og:image"');
+      expect(content).toContain('name="twitter:card" content="summary_large_image"');
+      expect(content).toContain('application/ld+json');
+    }
+  });
 });

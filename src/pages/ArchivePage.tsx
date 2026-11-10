@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Github, Filter, ArrowUpRight } from 'lucide-react';
 import projectsData from '../data/projects.json';
+import SEOHead from '../components/SEOHead';
+import { STATIC_ROUTES_SEO } from '../data/seoConfig';
 
 export default function ArchivePage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,6 +32,7 @@ export default function ArchivePage() {
 
   return (
     <div className="py-12 sm:py-16 space-y-12">
+      <SEOHead {...STATIC_ROUTES_SEO['/archive']} />
       <div className="site-container space-y-10">
         {/* Header */}
         <header className="border-b border-[rgba(255,255,255,0.08)] pb-8 space-y-3">
