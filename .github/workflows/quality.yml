@@ -1,0 +1,39 @@
+name: Security branch quality checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - security/fail-closed-admin-auth
+
+permissions:
+  contents: read
+
+jobs:
+  node-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Test-only values. Never use these in any deployment environment.
+      NODE_ENV: test
+      ADMIN_PASSWORD: ci-only-test-password-not-for-deployment-2026
+      SECURITY_HMAC_KEY: ci-only-test-key-never-use-in-deployment-32-bytes-minimum
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Type-check, build and regenerate API bundles
+        run: npm run build
