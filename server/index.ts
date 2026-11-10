@@ -31,7 +31,13 @@ function isOriginAllowed(origin: string | undefined): boolean {
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin;
 
-  if (origin && isOriginAllowed(origin)) {
+  if (origin && !isOriginAllowed(origin)) {
+    res.statusCode = 403;
+    res.end('Origin not allowed');
+    return;
+  }
+
+  if (origin) {
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
