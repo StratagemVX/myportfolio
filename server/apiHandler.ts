@@ -932,8 +932,8 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     const state = stateManager.getState();
 
     const expectedChallenge = stateManager.currentWebAuthnChallenge;
-    if (!expectedChallenge) {
-      sendJson(res, 400, { error: 'No active WebAuthn login challenge found.' });
+    if (!stateManager.isWebAuthnChallengeValid(expectedChallenge, 'authentication', state.owner.id)) {
+      sendJson(res, 400, { error: 'No active, valid WebAuthn login challenge found.' });
       return true;
     }
 
@@ -959,8 +959,11 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
       });
 
       if (verification.verified) {
+        if (!stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, 'authentication', state.owner.id)) {
+          sendJson(res, 400, { error: 'WebAuthn login challenge expired or already used.' });
+          return true;
+        }
         stateManager.touchPasskey(passkey.id, verification.authenticationInfo.newCounter);
-        stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, 'authentication');
         if (challengeToken) {
           stateManager.pendingLoginChallenges.delete(challengeToken);
         }
@@ -1680,8 +1683,8 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     const state = stateManager.getState();
 
     const expectedChallenge = stateManager.currentWebAuthnChallenge;
-    if (!expectedChallenge) {
-      sendJson(res, 400, { error: 'No active WebAuthn registration challenge found.' });
+    if (!stateManager.isWebAuthnChallengeValid(expectedChallenge, 'registration', state.owner.id)) {
+      sendJson(res, 400, { error: 'No active, valid WebAuthn registration challenge found.' });
       return true;
     }
 
@@ -1715,8 +1718,11 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
           revoked: false
         };
 
+        if (!stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, 'registration', state.owner.id)) {
+          sendJson(res, 400, { error: 'WebAuthn registration challenge expired or already used.' });
+          return true;
+        }
         const result = stateManager.addPasskey(passkeyEntry);
-        stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, 'registration');
 
         stateManager.addAuditLog({
           action: 'PASSKEY_ENROLLED',
