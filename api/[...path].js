@@ -40,7 +40,10 @@ function verifyPassword(password, hash, salt) {
   const computed = hashPassword(password, salt);
   return safeCompare(computed, hash);
 }
-var INTERNAL_HMAC_SECRET = process.env.SECURITY_HMAC_KEY || "portfolio-security-hmac-seed-ck-2026";
+var INTERNAL_HMAC_SECRET = process.env.SECURITY_HMAC_KEY;
+if (!INTERNAL_HMAC_SECRET || Buffer.byteLength(INTERNAL_HMAC_SECRET, "utf8") < 32) {
+  throw new Error("SECURITY_HMAC_KEY must be configured with at least 32 bytes before starting the security service.");
+}
 function hmacSha256(data, secret = INTERNAL_HMAC_SECRET) {
   return crypto.createHmac("sha256", secret).update(data).digest("hex");
 }
@@ -238,10 +241,7 @@ var SecurityStateManager = class {
       }
       return true;
     }
-    if (this.currentWebAuthnChallenge === challenge) {
-      this.currentWebAuthnChallenge = null;
-      return true;
-    }
+    // Reject missing, expired, mismatched-type, and replayed challenges.
     return false;
   }
   constructor() {
@@ -4187,11 +4187,25 @@ async function handleApiRequest(req, res) {
 // api/serverless.ts
 async function handler(req, res) {
   const origin = req.headers.origin;
-  res.setHeader("Access-Control-Allow-Origin", origin || "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
+  const defaultAllowedOrigins = [
+    "https://chethan-kumar-portfolio.vercel.app",
+    "https://backend-api-production-c798.up.railway.app"
+  ];
+  const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || "").split(",").map((value) => value.trim()).filter(Boolean);
+  const originAllowed = !origin || process.env.NODE_ENV !== "production" || [...defaultAllowedOrigins, ...configuredOrigins].includes(origin);
+  if (origin && originAllowed) {
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
   if (req.method === "OPTIONS") {
+    if (origin && !originAllowed) {
+      res.statusCode = 403;
+      res.end();
+      return;
+    }
     res.statusCode = 204;
     res.end();
     return;
