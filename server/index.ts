@@ -54,15 +54,16 @@ const server = http.createServer(async (req, res) => {
   const pathname = url.pathname;
 
   // Root & Standard Health Check Endpoints for Railway & Monitoring
-  if ((pathname === '/health' || pathname === '/api/health') && req.method === 'GET') {
+  if ((pathname === '/health' || pathname === '/api/health' || pathname === '/') && req.method === 'GET') {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
     res.end(
       JSON.stringify({
-        status: 'HEALTHY',
+        status: 'ok',
+        service: 'portfolio-api',
+        health: 'HEALTHY',
         uptimeSeconds: Math.floor(process.uptime()),
         timestampIST: formatIST(),
-        service: 'chethan-portfolio-backend',
         environment: process.env.NODE_ENV || 'production'
       })
     );

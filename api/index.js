@@ -2029,6 +2029,31 @@ function getClientMeta(req) {
   else if (userAgent.includes("iPhone") || userAgent.includes("iPad")) os2 = "iOS";
   return { ipAddress, userAgent, browser, os: os2 };
 }
+var loginRateLimiter = /* @__PURE__ */ new Map();
+var MAX_LOGIN_ATTEMPTS = 5;
+var LOGIN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1e3;
+function checkLoginRateLimit(ip) {
+  const now = Date.now();
+  const entry = loginRateLimiter.get(ip);
+  if (!entry) return true;
+  if (now - entry.firstAttemptAt > LOGIN_RATE_LIMIT_WINDOW_MS) {
+    loginRateLimiter.delete(ip);
+    return true;
+  }
+  return entry.attempts < MAX_LOGIN_ATTEMPTS;
+}
+function recordFailedLogin(ip) {
+  const now = Date.now();
+  const entry = loginRateLimiter.get(ip);
+  if (!entry || now - entry.firstAttemptAt > LOGIN_RATE_LIMIT_WINDOW_MS) {
+    loginRateLimiter.set(ip, { attempts: 1, firstAttemptAt: now });
+  } else {
+    entry.attempts++;
+  }
+}
+function resetLoginRateLimit(ip) {
+  loginRateLimiter.delete(ip);
+}
 async function handleApiRequest(req, res) {
   const urlObj = new URL(req.url || "/", `http://${req.headers.host || "localhost:3000"}`);
   let pathname = urlObj.pathname;
@@ -2037,12 +2062,14 @@ async function handleApiRequest(req, res) {
   }
   const method = req.method?.toUpperCase() || "GET";
   const meta = getClientMeta(req);
-  if (pathname === "/api/health" || pathname === "/api/security/status") {
+  if ((pathname === "/api/health" || pathname === "/api/security/status" || pathname === "/health" || pathname === "/api" || pathname === "/api/") && method === "GET") {
     const providerStatus = notificationService.getProviderStatus();
     const state = stateManager.getState();
     const hasAuth0 = Boolean(process.env.VITE_AUTH0_DOMAIN && !process.env.VITE_AUTH0_DOMAIN.includes("your-tenant"));
     sendJson(res, 200, {
-      status: "HEALTHY",
+      status: "ok",
+      service: "portfolio-api",
+      health: "HEALTHY",
       timestampIST: formatIST(),
       matrix: {
         auth0: {
@@ -2114,16 +2141,31 @@ async function handleApiRequest(req, res) {
     return true;
   }
   if (pathname === "/api/auth/login" && method === "POST") {
+    const meta2 = getClientMeta(req);
     const body = await parseJsonBody(req);
     const { identifier, passphrase } = body;
     const state = stateManager.getState();
+    if (!checkLoginRateLimit(meta2.ipAddress)) {
+      stateManager.addAuditLog({
+        action: "LOGIN_RATE_LIMITED",
+        category: "AUTH",
+        status: "FAILURE",
+        actor: typeof identifier === "string" ? identifier : "Unknown",
+        ipAddress: meta2.ipAddress,
+        details: "Rate limit exceeded: excessive failed login attempts from IP address."
+      });
+      sendJson(res, 429, {
+        error: "Too many failed login attempts. Please wait 10 minutes before trying again."
+      });
+      return true;
+    }
     if (!identifier || typeof identifier !== "string" || !identifier.trim() || !passphrase || typeof passphrase !== "string" || passphrase.trim().length === 0) {
       stateManager.addAuditLog({
         action: "LOGIN_ATTEMPT_REJECTED",
         category: "AUTH",
         status: "FAILURE",
         actor: identifier || "Empty",
-        ipAddress: meta.ipAddress,
+        ipAddress: meta2.ipAddress,
         details: "Empty credentials rejected at administrative security gate."
       });
       sendJson(res, 400, {
@@ -2135,6 +2177,7 @@ async function handleApiRequest(req, res) {
     const isOwner = idClean === state.owner.loginEmail.toLowerCase() || idClean === state.owner.loginUsername.toLowerCase() || idClean === (state.owner.preferredDisplayName || "").toLowerCase() || idClean === (state.owner.displayName || "").toLowerCase() || idClean === "chethan" || idClean === "karna" || idClean === "stratagemvx";
     const validPassphrase = stateManager.verifyOwnerPassword(passphrase);
     if (isOwner && validPassphrase) {
+      resetLoginRateLimit(meta2.ipAddress);
       const challengeToken = `chal_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
       stateManager.pendingLoginChallenges.set(challengeToken, {
         userId: state.owner.id,
@@ -2147,7 +2190,7 @@ async function handleApiRequest(req, res) {
         category: "AUTH",
         status: "SUCCESS",
         actor: state.owner.loginEmail,
-        ipAddress: meta.ipAddress,
+        ipAddress: meta2.ipAddress,
         details: "Primary administrator credentials verified. Mandatory MFA factor challenge issued."
       });
       sendJson(res, 200, {
@@ -2158,12 +2201,13 @@ async function handleApiRequest(req, res) {
         message: "Primary authentication passed. Secondary MFA challenge mandatory."
       });
     } else {
+      recordFailedLogin(meta2.ipAddress);
       stateManager.addAuditLog({
         action: "LOGIN_ATTEMPT_FAILED",
         category: "AUTH",
         status: "FAILURE",
         actor: identifier || "Unknown",
-        ipAddress: meta.ipAddress,
+        ipAddress: meta2.ipAddress,
         details: "Invalid administrative credentials provided at security gate."
       });
       sendJson(res, 401, {
@@ -2295,6 +2339,7 @@ async function handleApiRequest(req, res) {
         message: "Owner authenticated with verified TOTP factor."
       });
     } else {
+      recordFailedLogin(meta.ipAddress);
       stateManager.addAuditLog({
         action: "MFA_TOTP_REJECTED",
         category: "MFA",
@@ -2380,6 +2425,7 @@ async function handleApiRequest(req, res) {
         message: "Owner authenticated via emergency recovery code."
       });
     } else {
+      recordFailedLogin(meta.ipAddress);
       stateManager.addAuditLog({
         action: "RECOVERY_CODE_REJECTED",
         category: "MFA",
@@ -3724,10 +3770,13 @@ async function handler(req, res) {
   const matchedPath = req.headers["x-matched-path"] || req.headers["x-vercel-matched-path"];
   let targetPath = urlObj.pathname;
   if (customPath) {
-    targetPath = "/api/" + customPath.replace(/^\/+/, "");
+    const clean = customPath.replace(/^\/+/, "");
+    targetPath = clean === "health" || clean === "api/health" ? "/api/health" : "/api/" + clean;
     urlObj.searchParams.delete("__path");
   } else if (matchedPath && matchedPath.startsWith("/api")) {
     targetPath = matchedPath;
+  } else if (targetPath === "/health") {
+    targetPath = "/api/health";
   } else if (!targetPath.startsWith("/api")) {
     targetPath = "/api" + (targetPath.startsWith("/") ? targetPath : "/" + targetPath);
   }
@@ -3739,9 +3788,11 @@ async function handler(req, res) {
       res.statusCode = 404;
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify({
-        error: "Endpoint not found",
-        path: req.url,
-        method: req.method
+        success: false,
+        error: {
+          code: "ENDPOINT_NOT_FOUND",
+          message: `Endpoint ${req.method} ${req.url} was not found.`
+        }
       }));
     }
   } catch (error) {
@@ -3749,7 +3800,13 @@ async function handler(req, res) {
     if (!res.headersSent) {
       res.statusCode = 500;
       res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ error: "Internal Server Error" }));
+      res.end(JSON.stringify({
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected internal server error occurred."
+        }
+      }));
     }
   }
 }

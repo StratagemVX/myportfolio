@@ -3,15 +3,19 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/health",
+      "destination": "/api?__path=health"
+    },
+    {
       "source": "/api",
-      "destination": "/api/index.js?__path=health"
+      "destination": "/api?__path=health"
     },
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.js?__path=$1"
+      "destination": "/api?__path=$1"
     },
     {
-      "source": "/((?!api(?:/|$)).*)",
+      "source": "/((?!api(?:/|$)|health(?:/|$)).*)",
       "destination": "/"
     }
   ],
@@ -122,7 +126,16 @@
       ]
     },
     {
-      "source": "/((?!admin|api|resume\\.pdf).*)",
+      "source": "/health",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/((?!admin|api|health|resume\\.pdf).*)",
       "headers": [
         {
           "key": "X-Robots-Tag",

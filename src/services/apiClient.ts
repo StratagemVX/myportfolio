@@ -7,6 +7,28 @@ import type {
   IntegrationStatusMatrix
 } from '../../server/types';
 
+export interface ApiErrorPayload {
+  code: string;
+  message: string;
+  status: number;
+  details?: unknown;
+}
+
+export class ApiError extends Error {
+  public readonly code: string;
+  public readonly status: number;
+  public readonly details?: unknown;
+
+  constructor(payload: ApiErrorPayload) {
+    super(payload.message);
+    this.name = 'ApiError';
+    this.code = payload.code;
+    this.status = payload.status;
+    this.details = payload.details;
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
+}
+
 class SecurityApiClient {
   private baseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
   private sessionToken: string | null = typeof window !== 'undefined' ? localStorage.getItem('owner_session_token') : null;
@@ -31,20 +53,156 @@ class SecurityApiClient {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = this.getSessionToken();
-    const res = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        ...(options.headers || {})
-      }
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || data.message || `Request failed with status ${res.status}`);
+    let res: Response;
+    
+    try {
+      res = await fetch(`${this.baseUrl}${endpoint}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(options.headers || {})
+        }
+      });
+    } catch (networkErr: unknown) {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const message = isOffline
+        ? 'Network offline. Please check your internet connection.'
+        : 'Unable to reach authentication server. Please check your network connection.';
+      console.error('[SecurityApiClient] Network failure reaching endpoint:', endpoint, networkErr);
+      throw new ApiError({
+        code: 'NETWORK_ERROR',
+        message,
+        status: 0,
+        details: networkErr instanceof Error ? networkErr.message : String(networkErr)
+      });
     }
-    return data as T;
+
+    const contentType = res.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json') || contentType.includes('+json');
+
+    // Handle empty body responses (e.g. 204 No Content)
+    if (res.status === 204) {
+      if (!res.ok) {
+        throw new ApiError({
+          code: `HTTP_${res.status}`,
+          message: `Request failed with HTTP status ${res.status}`,
+          status: res.status
+        });
+      }
+      return {} as T;
+    }
+
+    let responseText = '';
+    try {
+      responseText = await res.text();
+    } catch (readErr: unknown) {
+      console.error('[SecurityApiClient] Failed to read response stream:', readErr);
+      throw new ApiError({
+        code: 'RESPONSE_READ_ERROR',
+        message: 'Failed to read response from server.',
+        status: res.status
+      });
+    }
+
+    // Safely attempt JSON parsing if Content-Type indicates JSON or text appears to be JSON
+    let parsedData: any = null;
+    let parseSucceeded = false;
+    const trimmed = responseText.trim();
+    if (isJson || trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        parsedData = JSON.parse(responseText);
+        parseSucceeded = true;
+      } catch (parseErr) {
+        console.warn('[SecurityApiClient] Response indicated JSON but parse failed:', parseErr, responseText.slice(0, 100));
+      }
+    }
+
+    // Handle non-2xx HTTP responses
+    if (!res.ok) {
+      let code = `HTTP_${res.status}`;
+      let message = '';
+
+      if (parseSucceeded && parsedData && typeof parsedData === 'object') {
+        if (parsedData.error) {
+          if (typeof parsedData.error === 'object' && parsedData.error.message) {
+            message = parsedData.error.message;
+            code = parsedData.error.code || code;
+          } else if (typeof parsedData.error === 'string') {
+            message = parsedData.error;
+          }
+        } else if (parsedData.message) {
+          message = parsedData.message;
+        }
+      }
+
+      if (!message) {
+        switch (res.status) {
+          case 400:
+            message = 'Invalid request parameters. Please verify your input.';
+            code = 'BAD_REQUEST';
+            break;
+          case 401:
+            message = 'Authentication failed. Please verify your credentials.';
+            code = 'UNAUTHORIZED';
+            break;
+          case 403:
+            message = 'Access denied. You do not have permission to access this resource.';
+            code = 'FORBIDDEN';
+            break;
+          case 404:
+            message = 'The requested authentication endpoint could not be found. Please contact support or try again later.';
+            code = 'ENDPOINT_NOT_FOUND';
+            break;
+          case 429:
+            message = 'Too many requests. Please wait a moment and try again.';
+            code = 'RATE_LIMITED';
+            break;
+          case 500:
+            message = 'Internal server error. The authentication system encountered an issue.';
+            code = 'INTERNAL_SERVER_ERROR';
+            break;
+          case 502:
+          case 503:
+          case 504:
+            message = 'Authentication service is temporarily unavailable. Please retry in a few moments.';
+            code = 'AUTH_SERVICE_UNAVAILABLE';
+            break;
+          default:
+            message = `Request failed with status ${res.status}.`;
+        }
+      }
+
+      console.error(`[SecurityApiClient] HTTP ${res.status} on ${endpoint}:`, {
+        code,
+        message,
+        contentType,
+        bodySnippet: responseText.slice(0, 200)
+      });
+
+      throw new ApiError({
+        code,
+        message,
+        status: res.status,
+        details: parseSucceeded ? parsedData : undefined
+      });
+    }
+
+    // If HTTP status is ok, but body is not valid JSON
+    if (!parseSucceeded) {
+      if (trimmed.length === 0) {
+        return {} as T;
+      }
+      console.error(`[SecurityApiClient] Successful HTTP ${res.status} but invalid JSON returned for ${endpoint}:`, responseText.slice(0, 200));
+      throw new ApiError({
+        code: 'INVALID_JSON_RESPONSE',
+        message: 'Received an invalid response format from server.',
+        status: res.status
+      });
+    }
+
+    return parsedData as T;
   }
 
   // Health & Integration Matrix

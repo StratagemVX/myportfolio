@@ -213,6 +213,40 @@ function getClientMeta(req: IncomingMessage) {
   return { ipAddress, userAgent, browser, os };
 }
 
+// IP-based Rate Limiter for Authentication Endpoints (Brute-Force Protection)
+interface RateLimitEntry {
+  attempts: number;
+  firstAttemptAt: number;
+}
+const loginRateLimiter = new Map<string, RateLimitEntry>();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
+export function checkLoginRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = loginRateLimiter.get(ip);
+  if (!entry) return true;
+  if (now - entry.firstAttemptAt > LOGIN_RATE_LIMIT_WINDOW_MS) {
+    loginRateLimiter.delete(ip);
+    return true;
+  }
+  return entry.attempts < MAX_LOGIN_ATTEMPTS;
+}
+
+export function recordFailedLogin(ip: string): void {
+  const now = Date.now();
+  const entry = loginRateLimiter.get(ip);
+  if (!entry || now - entry.firstAttemptAt > LOGIN_RATE_LIMIT_WINDOW_MS) {
+    loginRateLimiter.set(ip, { attempts: 1, firstAttemptAt: now });
+  } else {
+    entry.attempts++;
+  }
+}
+
+export function resetLoginRateLimit(ip: string): void {
+  loginRateLimiter.delete(ip);
+}
+
 // Master Request Router for /api/*
 export async function handleApiRequest(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost:3000'}`);
@@ -224,13 +258,22 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
   const meta = getClientMeta(req);
 
   // 1. Health & Integration Status Matrix
-  if (pathname === '/api/health' || pathname === '/api/security/status') {
+  if (
+    (pathname === '/api/health' || 
+     pathname === '/api/security/status' || 
+     pathname === '/health' || 
+     pathname === '/api' || 
+     pathname === '/api/') && 
+    method === 'GET'
+  ) {
     const providerStatus = notificationService.getProviderStatus();
     const state = stateManager.getState();
     const hasAuth0 = Boolean(process.env.VITE_AUTH0_DOMAIN && !process.env.VITE_AUTH0_DOMAIN.includes('your-tenant'));
 
     sendJson(res, 200, {
-      status: 'HEALTHY',
+      status: 'ok',
+      service: 'portfolio-api',
+      health: 'HEALTHY',
       timestampIST: formatIST(),
       matrix: {
         auth0: {
@@ -316,9 +359,26 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
 
   // 3. Primary Authentication (Step 1 of Login - Zero Bypass, Strict Validation)
   if (pathname === '/api/auth/login' && method === 'POST') {
+    const meta = getClientMeta(req);
     const body = await parseJsonBody(req);
     const { identifier, passphrase } = body;
     const state = stateManager.getState();
+
+    // Enforce brute-force rate limiting per client IP (Max 5 failed attempts per 10 mins)
+    if (!checkLoginRateLimit(meta.ipAddress)) {
+      stateManager.addAuditLog({
+        action: 'LOGIN_RATE_LIMITED',
+        category: 'AUTH',
+        status: 'FAILURE',
+        actor: typeof identifier === 'string' ? identifier : 'Unknown',
+        ipAddress: meta.ipAddress,
+        details: 'Rate limit exceeded: excessive failed login attempts from IP address.'
+      });
+      sendJson(res, 429, {
+        error: 'Too many failed login attempts. Please wait 10 minutes before trying again.'
+      });
+      return true;
+    }
 
     // Reject empty identifier or password immediately
     if (
@@ -353,6 +413,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
     const validPassphrase = stateManager.verifyOwnerPassword(passphrase);
 
     if (isOwner && validPassphrase) {
+      resetLoginRateLimit(meta.ipAddress);
       const challengeToken = `chal_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
       stateManager.pendingLoginChallenges.set(challengeToken, {
         userId: state.owner.id,
@@ -377,6 +438,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
         message: 'Primary authentication passed. Secondary MFA challenge mandatory.'
       });
     } else {
+      recordFailedLogin(meta.ipAddress);
       stateManager.addAuditLog({
         action: 'LOGIN_ATTEMPT_FAILED',
         category: 'AUTH',
@@ -544,6 +606,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
         message: 'Owner authenticated with verified TOTP factor.'
       });
     } else {
+      recordFailedLogin(meta.ipAddress);
       stateManager.addAuditLog({
         action: 'MFA_TOTP_REJECTED',
         category: 'MFA',
@@ -643,6 +706,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
         message: 'Owner authenticated via emergency recovery code.'
       });
     } else {
+      recordFailedLogin(meta.ipAddress);
       stateManager.addAuditLog({
         action: 'RECOVERY_CODE_REJECTED',
         category: 'MFA',

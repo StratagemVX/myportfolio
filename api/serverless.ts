@@ -27,10 +27,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   let targetPath = urlObj.pathname;
   if (customPath) {
-    targetPath = '/api/' + customPath.replace(/^\/+/, '');
+    const clean = customPath.replace(/^\/+/, '');
+    targetPath = (clean === 'health' || clean === 'api/health') ? '/api/health' : ('/api/' + clean);
     urlObj.searchParams.delete('__path');
   } else if (matchedPath && matchedPath.startsWith('/api')) {
     targetPath = matchedPath;
+  } else if (targetPath === '/health') {
+    targetPath = '/api/health';
   } else if (!targetPath.startsWith('/api')) {
     targetPath = '/api' + (targetPath.startsWith('/') ? targetPath : '/' + targetPath);
   }
@@ -45,9 +48,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       res.statusCode = 404;
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ 
-        error: 'Endpoint not found', 
-        path: req.url,
-        method: req.method 
+        success: false,
+        error: {
+          code: 'ENDPOINT_NOT_FOUND',
+          message: `Endpoint ${req.method} ${req.url} was not found.`
+        }
       }));
     }
   } catch (error) {
@@ -55,7 +60,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (!res.headersSent) {
       res.statusCode = 500;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: 'Internal Server Error' }));
+      res.end(JSON.stringify({ 
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'An unexpected internal server error occurred.'
+        }
+      }));
     }
   }
 }
