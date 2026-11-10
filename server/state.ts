@@ -132,11 +132,7 @@ class SecurityStateManager {
       }
       return true;
     }
-    // Also check single legacy fallback
-    if (this.currentWebAuthnChallenge === challenge) {
-      this.currentWebAuthnChallenge = null;
-      return true;
-    }
+    // Reject missing, expired, mismatched-type, and replayed challenges.
     return false;
   }
 
