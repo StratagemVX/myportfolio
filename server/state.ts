@@ -222,24 +222,7 @@ class SecurityStateManager {
           }
         }
       },
-      sessions: [
-        {
-          id: 'sess-current-dev',
-          sessionTokenHash: sha256('default-dev-session-token'),
-          userId: 'usr_stratagemvx_owner_01',
-          ipAddress: '127.0.0.1 (Local Workstation)',
-          userAgent: 'Chrome on Windows 11',
-          browser: 'Chrome 131.0',
-          os: 'Windows 11 NT',
-          createdAt: now.toISOString(),
-          createdAtIST: formatIST(now),
-          lastActiveAt: now.toISOString(),
-          lastActiveAtIST: formatIST(now),
-          expiresAt: new Date(now.getTime() + 86400000).toISOString(),
-          expiresAtIST: formatIST(new Date(now.getTime() + 86400000)),
-          isCurrent: true
-        }
-      ],
+      sessions: [],
       auditLogs: [
         {
           id: 'audit-init-01',
@@ -264,32 +247,7 @@ class SecurityStateManager {
           details: 'Multi-factor authentication (TOTP RFC 6238 / FIDO2 Passkeys) locked to mandatory for all administrative access.'
         }
       ],
-      recruiterTokens: [
-        {
-          id: 'rt-seed-1',
-          tokenHash: sha256('REC-2026-A89F-91C2-4E5B'),
-          tokenPrefix: 'REC-2026-A89F••••',
-          label: 'Campus Technical Recruiter Brief',
-          createdAt: new Date(Date.now() - 6 * 24 * 3600 * 1000).toISOString(),
-          createdAtIST: formatIST(new Date(Date.now() - 6 * 24 * 3600 * 1000)),
-          expiresAt: new Date(Date.now() + 24 * 24 * 3600 * 1000).toISOString(),
-          accessCount: 3,
-          status: 'Active',
-          lastAccessedAt: formatIST(new Date(Date.now() - 2 * 3600 * 1000))
-        },
-        {
-          id: 'rt-seed-2',
-          tokenHash: sha256('REC-2026-C42B-19D4-8F7A'),
-          tokenPrefix: 'REC-2026-C42B••••',
-          label: 'Staff Software Architect Review',
-          createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
-          createdAtIST: formatIST(new Date(Date.now() - 3 * 24 * 3600 * 1000)),
-          expiresAt: new Date(Date.now() + 27 * 24 * 3600 * 1000).toISOString(),
-          accessCount: 1,
-          status: 'Active',
-          lastAccessedAt: formatIST(new Date(Date.now() - 14 * 3600 * 1000))
-        }
-      ]
+      recruiterTokens: []
     };
   }
 
