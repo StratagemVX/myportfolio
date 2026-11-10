@@ -932,7 +932,7 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     const state = stateManager.getState();
 
     const expectedChallenge = stateManager.currentWebAuthnChallenge;
-    if (!stateManager.isWebAuthnChallengeValid(expectedChallenge, 'authentication', state.owner.id)) {
+    if (!expectedChallenge || !stateManager.isWebAuthnChallengeValid(expectedChallenge, 'authentication', state.owner.id)) {
       sendJson(res, 400, { error: 'No active, valid WebAuthn login challenge found.' });
       return true;
     }
@@ -1683,7 +1683,7 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     const state = stateManager.getState();
 
     const expectedChallenge = stateManager.currentWebAuthnChallenge;
-    if (!stateManager.isWebAuthnChallengeValid(expectedChallenge, 'registration', state.owner.id)) {
+    if (!expectedChallenge || !stateManager.isWebAuthnChallengeValid(expectedChallenge, 'registration', state.owner.id)) {
       sendJson(res, 400, { error: 'No active, valid WebAuthn registration challenge found.' });
       return true;
     }
