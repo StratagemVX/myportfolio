@@ -4,7 +4,7 @@
 
 [![React](https://img.shields.io/badge/React-18-61DAFB.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6.svg)](https://www.typescriptlang.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-75%2F75%20Passing-brightgreen.svg)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-configured-729B1B.svg)](https://vitest.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC.svg)](https://tailwindcss.com/)
 
 ---
@@ -21,7 +21,7 @@ This repository houses the personal software engineering portfolio of Chethan Ku
 - **Static Route Prerendering (`scripts/generate-static-pages.mjs`):** Generates 29 standalone static HTML pages for instantaneous initial page loads and optimal SEO.
 - **Automated GitHub Synchronization (`scripts/sync-github.mjs`):** Live synchronization script fetching public repositories and categorizing projects automatically.
 - **Administrative Security Gate (`SecurityGate.tsx`):** Protected administrative dashboard guarded by WebAuthn FIDO2 biometric passkeys and TOTP authenticators.
-- **Comprehensive Vitest Suite:** **5 test suites with 75 verified passing unit tests** validating route integrity, security gates, and error resilience.
+- **Vitest suite:** Unit tests are configured for route integrity, security gates, and error resilience. Run the test command below in CI to verify the current result before publishing a passing-test count.
 
 ---
 
@@ -66,7 +66,7 @@ npm run build
 
 ## Verification and maintenance
 
-Keep the NLP model/algorithm description, data and evaluation claims, dependencies, and setup instructions aligned with the implementation. Clearly separate measured results from intended capabilities.
+Keep the portfolio features, route count, GitHub synchronization, authentication controls, dependencies, and deployment instructions aligned with the implementation. Clearly distinguish configured controls from security guarantees verified by tests.
 
 ### Available package scripts
 
@@ -84,3 +84,16 @@ These commands are declared in the package manifest; they have not been executed
 - Use placeholder-only examples and deployment-managed secrets.
 - Include reproducible issue steps and expected/actual results.
 - Run relevant build, lint, and test checks before merging.
+
+
+## Required server environment
+
+Configure these values in the deployment platform's secret/environment settings. Do not commit production values:
+
+| Variable | Requirement |
+|---|---|
+| `ADMIN_PASSWORD` | Required for owner-state initialization or credential migration; at least 16 characters. Use a new, unique high-entropy value. |
+| `SECURITY_HMAC_KEY` | Required at startup; at least 32 random bytes. Do not reuse the previous source-controlled fallback. |
+| `CORS_ALLOWED_ORIGINS` | Optional comma-separated list of exact approved origins, including scheme and host. Do not use wildcard domains. |
+
+See `.env.example` for placeholder names only. After changing secrets, restart the deployment and verify owner login, session signing, WebAuthn passkeys, and approved-origin CORS behavior.
