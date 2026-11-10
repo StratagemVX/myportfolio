@@ -122,18 +122,17 @@ class SecurityStateManager {
     }
   }
 
-  public verifyAndConsumeWebAuthnChallenge(challenge: string, type: 'registration' | 'authentication'): boolean {
+  public isWebAuthnChallengeValid(challenge: string, type: 'registration' | 'authentication', userId?: string): boolean {
     if (!challenge) return false;
     const entry = this.webauthnChallenges.get(challenge);
-    if (entry && entry.type === type && Date.now() <= entry.expiresAt) {
-      this.webauthnChallenges.delete(challenge);
-      if (this.currentWebAuthnChallenge === challenge) {
-        this.currentWebAuthnChallenge = null;
-      }
-      return true;
-    }
-    // Reject missing, expired, mismatched-type, and replayed challenges.
-    return false;
+    return Boolean(entry && entry.type === type && Date.now() <= entry.expiresAt && (!userId || entry.userId === userId));
+  }
+
+  public verifyAndConsumeWebAuthnChallenge(challenge: string, type: 'registration' | 'authentication', userId?: string): boolean {
+    if (!this.isWebAuthnChallengeValid(challenge, type, userId)) return false;
+    this.webauthnChallenges.delete(challenge);
+    if (this.currentWebAuthnChallenge === challenge) this.currentWebAuthnChallenge = null;
+    return true;
   }
 
   constructor() {
