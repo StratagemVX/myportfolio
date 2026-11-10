@@ -1,7 +1,17 @@
 import crypto from 'node:crypto';
 
 // Format Date into Indian Standard Time (IST, UTC +5:30)
-export function formatIST(date: Date = new Date()): string {
+export function formatIST(dateInput?: Date | string | number | null): string {
+  if (!dateInput) dateInput = new Date();
+  let date: Date;
+  if (dateInput instanceof Date) {
+    date = isNaN(dateInput.getTime()) ? new Date() : dateInput;
+  } else {
+    date = new Date(dateInput);
+    if (isNaN(date.getTime())) {
+      date = new Date();
+    }
+  }
   const istOffset = 5.5 * 60 * 60 * 1000;
   const istDate = new Date(date.getTime() + istOffset);
   
@@ -41,6 +51,33 @@ export function verifyPassword(password: string, hash: string, salt: string): bo
 const INTERNAL_HMAC_SECRET = process.env.SECURITY_HMAC_KEY || 'portfolio-security-hmac-seed-ck-2026';
 export function hmacSha256(data: string, secret: string = INTERNAL_HMAC_SECRET): string {
   return crypto.createHmac('sha256', secret).update(data).digest('hex');
+}
+
+// Cryptographically signed session tokens
+export function signSessionToken(sessionId: string, userId: string, expiresAt: number): string {
+  const payload = `${sessionId}.${userId}.${expiresAt}`;
+  const sig = hmacSha256(payload, INTERNAL_HMAC_SECRET);
+  return `sess_${payload}.${sig}`;
+}
+
+export function verifySessionToken(token: string): { valid: boolean; sessionId?: string; userId?: string; expiresAt?: number } {
+  if (!token || typeof token !== 'string') return { valid: false };
+  if (!token.startsWith('sess_')) return { valid: false };
+  const rest = token.substring(5);
+  const parts = rest.split('.');
+  if (parts.length !== 4) {
+    return { valid: false };
+  }
+  const [sessionId, userId, expiresAtStr, sig] = parts;
+  const expiresAt = parseInt(expiresAtStr, 10);
+  if (isNaN(expiresAt) || Date.now() > expiresAt) {
+    return { valid: false };
+  }
+  const expectedSig = hmacSha256(`${sessionId}.${userId}.${expiresAtStr}`, INTERNAL_HMAC_SECRET);
+  if (!safeCompare(sig, expectedSig)) {
+    return { valid: false };
+  }
+  return { valid: true, sessionId, userId, expiresAt };
 }
 
 // Timing-safe string comparison to prevent timing attacks

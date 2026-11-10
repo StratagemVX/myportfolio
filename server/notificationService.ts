@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { formatIST, sha256 } from './cryptoUtils';
 import { maskEmail, maskPhone } from './types';
 import type { 
@@ -39,7 +40,17 @@ export interface DispatchResult {
   operationStats?: any;
 }
 
-const NOTIFICATIONS_FILE = path.join(process.cwd(), 'server', 'notifications-log.json');
+function getNotificationsLogPath(): string {
+  if (process.env.NOTIFICATIONS_LOG_PATH) {
+    return process.env.NOTIFICATIONS_LOG_PATH;
+  }
+  if (fs.existsSync('/app/data')) {
+    return path.join('/app', 'data', 'notifications-log.json');
+  }
+  return path.join(process.cwd(), 'server', 'notifications-log.json');
+}
+
+const TMP_NOTIFICATIONS_FILE = path.join(os.tmpdir(), 'chethan-portfolio-notifications-log.json');
 
 class NotificationService {
   private history: NotificationDeliveryRecord[] = [];
@@ -72,8 +83,18 @@ class NotificationService {
 
   private loadHistory() {
     try {
-      if (fs.existsSync(NOTIFICATIONS_FILE)) {
-        const raw = fs.readFileSync(NOTIFICATIONS_FILE, 'utf-8');
+      const target = getNotificationsLogPath();
+      const seedFile = path.join(process.cwd(), 'server', 'notifications-log.json');
+      let fileToRead: string | null = null;
+      if (fs.existsSync(target)) {
+        fileToRead = target;
+      } else if (fs.existsSync(seedFile)) {
+        fileToRead = seedFile;
+      } else if (fs.existsSync(TMP_NOTIFICATIONS_FILE)) {
+        fileToRead = TMP_NOTIFICATIONS_FILE;
+      }
+      if (fileToRead) {
+        const raw = fs.readFileSync(fileToRead, 'utf-8');
         const parsed = JSON.parse(raw);
         this.history = (Array.isArray(parsed) ? parsed : []).map(r => this.normalizeRecord(r));
       }
@@ -130,10 +151,19 @@ class NotificationService {
   }
 
   private saveHistory() {
+    const target = getNotificationsLogPath();
     try {
-      fs.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify(this.history.slice(0, 150), null, 2));
+      const dir = path.dirname(target);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(target, JSON.stringify(this.history.slice(0, 150), null, 2));
     } catch {
-      // Ignore write errors
+      try {
+        fs.writeFileSync(TMP_NOTIFICATIONS_FILE, JSON.stringify(this.history.slice(0, 150), null, 2));
+      } catch {
+        // Ignore write errors in ephemeral read-only filesystem
+      }
     }
   }
 
@@ -145,24 +175,24 @@ class NotificationService {
    * Collision-resistant idempotency key generator
    */
   public generateIdempotencyKey(channel: string, eventType: string, destination: string, content: string): string {
-    const timeBucket = Math.floor(Date.now() / 60000); // 60-second debounce
+    const timeBucket = Math.floor(Date.now() / 10000); // 10-second debounce window
     const raw = `${channel}:${eventType}:${destination}:${content.trim()}:${timeBucket}`;
     return `idemp_${sha256(raw).substring(0, 24)}`;
   }
 
   /**
-   * Check if a dispatch with the same idempotency key was executed within the 60s window
+   * Check if a dispatch with the same idempotency key was executed within the 10s window
    */
   public isDuplicateDispatch(idempotencyKey: string): boolean {
     const lastSeen = this.idempotencyCache.get(idempotencyKey);
-    if (lastSeen && (Date.now() - lastSeen < 60000)) {
+    if (lastSeen && (Date.now() - lastSeen < 10000)) {
       return true;
     }
     this.idempotencyCache.set(idempotencyKey, Date.now());
     if (this.idempotencyCache.size > 200) {
       const now = Date.now();
       for (const [k, v] of this.idempotencyCache.entries()) {
-        if (now - v > 600000) this.idempotencyCache.delete(k);
+        if (now - v > 60000) this.idempotencyCache.delete(k);
       }
     }
     return false;

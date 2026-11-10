@@ -63,9 +63,15 @@ export interface EnrolledPasskey {
   deviceType: CredentialDeviceType;
   backedUp: boolean;
   transports?: AuthenticatorTransport[];
+  aaguid?: string;
   deviceLabel: string;
+  nickname?: string;
   createdAt: string; // ISO
+  createdAtIST?: string;
   lastUsedAt: string | null;
+  lastUsedAtIST?: string | null;
+  revoked?: boolean;
+  revokedAt?: string;
 }
 
 export interface HashedRecoveryCode {
@@ -139,6 +145,8 @@ export interface InAppNotification {
   id: string;
   timestamp: string;
   timestampIST: string;
+  createdAt?: string;
+  createdAtIST?: string;
   eventType: string;
   subject: string;
   headline: string;
@@ -164,11 +172,16 @@ export interface ActiveSession {
   userAgent: string;
   browser: string;
   os: string;
+  deviceType?: 'DESKTOP' | 'MOBILE' | 'TABLET';
   createdAt: string;
   createdAtIST: string;
   lastActiveAt: string;
   lastActiveAtIST: string;
+  expiresAt: string;
+  expiresAtIST: string;
   isCurrent?: boolean;
+  revoked?: boolean;
+  revokedAt?: string;
 }
 
 export interface AuditLogEntry {

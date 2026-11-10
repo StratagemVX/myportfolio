@@ -44,9 +44,10 @@ type SecurityTab =
 interface Props {
   initialProfile: OwnerSecurityProfile;
   onProfileUpdated: (p: OwnerSecurityProfile) => void;
+  onSessionExpired?: () => void;
 }
 
-export default function AccountSecuritySection({ initialProfile, onProfileUpdated }: Props) {
+export default function AccountSecuritySection({ initialProfile, onProfileUpdated, onSessionExpired }: Props) {
   const { refreshProfile } = useProfile();
   const [activeTab, setActiveTab] = useState<SecurityTab>('profile');
   const [profile, setProfile] = useState<OwnerSecurityProfile>(initialProfile);
@@ -59,6 +60,10 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
   // Status & Feedback
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Passkey inline rename states
+  const [editingPasskeyId, setEditingPasskeyId] = useState<string | null>(null);
+  const [editingPasskeyLabel, setEditingPasskeyLabel] = useState('');
 
   // Modal / Flow States
   // 1. Display Name & Profile Update
@@ -128,7 +133,27 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
     loadInAppNotifications();
   }, []);
 
+  const maskEmailInText = (text: string): string => {
+    if (!text) return '';
+    return text.replace(/([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, (_match, user, domain) => {
+      const firstChar = user[0] || 't';
+      const lastChar = user.length > 2 ? user[user.length - 1] : '';
+      const domainParts = domain.split('.');
+      const dFirst = domainParts[0][0] || 'g';
+      return `${firstChar}*****${lastChar}@${dFirst}*****.${domainParts.slice(1).join('.')}`;
+    });
+  };
+
   const showFeedback = (type: 'success' | 'error', message: string) => {
+    if (type === 'error' && (message.includes('Owner session token required or expired') || message.includes('UNAUTHORIZED'))) {
+      setFeedback({ type: 'error', message: 'Owner session has expired. Redirecting to security gate...' });
+      setTimeout(() => {
+        if (onSessionExpired) {
+          onSessionExpired();
+        }
+      }, 1500);
+      return;
+    }
     setFeedback({ type, message });
     setTimeout(() => setFeedback(null), 8000);
   };
@@ -436,6 +461,28 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
       const regResp = await startRegistration({ optionsJSON: options });
       const res = await apiClient.verifyPasskeyRegister(passkeyLabel, regResp);
       showFeedback('success', res.message);
+      setPasskeyLabel('');
+      const p = await apiClient.getProfile();
+      setProfile(p.profile);
+      onProfileUpdated(p.profile);
+      loadAuditLogs();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showFeedback('error', msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Rename Passkey
+  const handleRenamePasskey = async (id: string) => {
+    if (!editingPasskeyLabel.trim()) return;
+    setLoading(true);
+    try {
+      const res = await apiClient.renamePasskey(id, editingPasskeyLabel.trim());
+      showFeedback('success', res.message || 'Passkey renamed successfully.');
+      setEditingPasskeyId(null);
+      setEditingPasskeyLabel('');
       const p = await apiClient.getProfile();
       setProfile(p.profile);
       onProfileUpdated(p.profile);
@@ -1648,14 +1695,54 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                   <tbody className="divide-y divide-[rgba(255,255,255,0.06)] bg-[#101114]">
                     {profile.passkeys.map(pk => (
                       <tr key={pk.id}>
-                        <td className="py-2.5 px-4 text-[#F0F0ED] font-medium flex items-center space-x-2">
-                          <Fingerprint className="w-3.5 h-3.5 text-[#A8B8A7]" />
-                          <span>{pk.deviceLabel}</span>
+                        <td className="py-2.5 px-4 text-[#F0F0ED] font-medium">
+                          {editingPasskeyId === pk.id ? (
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="text"
+                                value={editingPasskeyLabel}
+                                onChange={(e) => setEditingPasskeyLabel(e.target.value)}
+                                className="bg-[#181A1F] border border-[#A8B8A7] rounded px-2 py-1 text-xs text-[#F0F0ED] focus:outline-none"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRenamePasskey(pk.id)}
+                                className="px-2 py-1 bg-[#A8B8A7] text-[#101114] rounded text-[10px] font-semibold hover:bg-[#BDCCBA]"
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setEditingPasskeyId(null); setEditingPasskeyLabel(''); }}
+                                className="px-2 py-1 bg-[#22252C] text-[#A4A8AE] rounded text-[10px]"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <Fingerprint className="w-3.5 h-3.5 text-[#A8B8A7]" />
+                              <span>{pk.deviceLabel || pk.nickname || 'Passkey Credential'}</span>
+                            </div>
+                          )}
                         </td>
                         <td className="py-2.5 px-4 text-[#A4A8AE] font-mono">{pk.id.substring(0, 12)}••••</td>
-                        <td className="py-2.5 px-4 text-[#A4A8AE]">{new Date(pk.createdAt).toLocaleDateString()}</td>
-                        <td className="py-2.5 px-4 text-[#A8B8A7]">{pk.lastUsedAt ? new Date(pk.lastUsedAt).toLocaleString() : 'Never'}</td>
-                        <td className="py-2.5 px-4 text-right">
+                        <td className="py-2.5 px-4 text-[#A4A8AE]">
+                          {pk.createdAtIST || (pk.createdAt ? new Date(pk.createdAt).toLocaleDateString() : 'Enrolled')}
+                        </td>
+                        <td className="py-2.5 px-4 text-[#A8B8A7]">
+                          {pk.lastUsedAtIST || (pk.lastUsedAt ? new Date(pk.lastUsedAt).toLocaleString() : 'Never')}
+                        </td>
+                        <td className="py-2.5 px-4 text-right space-x-3">
+                          {editingPasskeyId !== pk.id && (
+                            <button
+                              onClick={() => { setEditingPasskeyId(pk.id); setEditingPasskeyLabel(pk.deviceLabel || pk.nickname || ''); }}
+                              className="text-[#A8B8A7] hover:underline text-[11px]"
+                            >
+                              Rename
+                            </button>
+                          )}
                           <button
                             onClick={() => handleRevokePasskey(pk.id)}
                             className="text-red-400 hover:underline text-[11px]"
@@ -1851,7 +1938,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       <div className="flex items-center space-x-2">
                         <span className={`w-2 h-2 rounded-full ${item.severity === 'CRITICAL' ? 'bg-red-400' : 'bg-[#A8B8A7]'}`} />
                         <span className="font-semibold text-xs">{item.headline || item.subject}</span>
-                        <span className="text-[10px] font-mono text-[#6E727A]">{new Date(item.createdAt).toLocaleString()}</span>
+                        <span className="text-[10px] font-mono text-[#6E727A]">
+                          {item.createdAtIST || item.timestampIST || (item.createdAt ? new Date(item.createdAt).toLocaleString() : (item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Recent'))}
+                        </span>
                       </div>
                       <p className="text-[11px] text-[#A4A8AE] leading-relaxed">{item.details}</p>
                     </div>
@@ -2499,9 +2588,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                         {log.status}
                       </span>
                     </td>
-                    <td className="py-2.5 px-4 text-[#A4A8AE]">{log.actor}</td>
-                    <td className="py-2.5 px-4 text-[#A4A8AE] max-w-xs truncate" title={log.details}>
-                      {log.details}
+                    <td className="py-2.5 px-4 text-[#A4A8AE]">{maskEmailInText(log.actor)}</td>
+                    <td className="py-2.5 px-4 text-[#A4A8AE] max-w-xs truncate" title={maskEmailInText(log.details)}>
+                      {maskEmailInText(log.details)}
                     </td>
                   </tr>
                 ))}

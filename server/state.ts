@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import crypto from 'node:crypto';
 import { 
   formatIST, 
   sha256, 
@@ -8,7 +9,8 @@ import {
   generateBase32Secret,
   generateSalt,
   hashPassword,
-  verifyPassword
+  verifyPassword,
+  signSessionToken
 } from './cryptoUtils';
 import { 
   maskEmail, 
@@ -27,7 +29,17 @@ import type {
   FCMDeviceToken
 } from './types';
 
-const STATE_FILE = path.join(process.cwd(), 'server', 'security-state.json');
+export function getTargetStateFile(): string {
+  if (process.env.STATE_FILE_PATH) {
+    return process.env.STATE_FILE_PATH;
+  }
+  // Check if /app/data exists (Railway persistent volume mount)
+  if (fs.existsSync('/app/data')) {
+    return path.join('/app', 'data', 'security-state.json');
+  }
+  return path.join(process.cwd(), 'server', 'security-state.json');
+}
+
 const TMP_STATE_FILE = path.join(os.tmpdir(), 'chethan-portfolio-security-state.json');
 
 export interface InternalServerState {
@@ -85,11 +97,47 @@ class SecurityStateManager {
   private state: InternalServerState;
   // Ephemeral in-memory challenges (never stored to disk)
   public currentWebAuthnChallenge: string | null = null;
+  public webauthnChallenges: Map<string, { challenge: string; type: 'registration' | 'authentication'; expiresAt: number; userId?: string }> = new Map();
   public pendingEmailOTP: EmailVerificationOTP | null = null;
   public pendingPhoneOTP: { codeHash: string; destination: string; expiresAt: number; channel: 'SMS' | 'WHATSAPP' } | null = null;
   public pendingEmailChange: { oldEmail: string; newEmail: string; codeHash: string; expiresAt: number; attempts: number } | null = null;
   public pendingRecoveryEmailChange: { oldEmail: string; newEmail: string; codeHash: string; expiresAt: number; attempts: number } | null = null;
   public pendingLoginChallenges: Map<string, { userId: string; expiresAt: number; primaryAuthCompleted: boolean }> = new Map();
+
+  public saveWebAuthnChallenge(challenge: string, type: 'registration' | 'authentication', userId?: string): void {
+    this.currentWebAuthnChallenge = challenge;
+    const now = Date.now();
+    this.webauthnChallenges.set(challenge, {
+      challenge,
+      type,
+      expiresAt: now + 5 * 60 * 1000, // 5 minutes
+      userId
+    });
+    // Evict expired challenges
+    if (this.webauthnChallenges.size > 50) {
+      for (const [k, v] of this.webauthnChallenges.entries()) {
+        if (now > v.expiresAt) this.webauthnChallenges.delete(k);
+      }
+    }
+  }
+
+  public verifyAndConsumeWebAuthnChallenge(challenge: string, type: 'registration' | 'authentication'): boolean {
+    if (!challenge) return false;
+    const entry = this.webauthnChallenges.get(challenge);
+    if (entry && entry.type === type && Date.now() <= entry.expiresAt) {
+      this.webauthnChallenges.delete(challenge);
+      if (this.currentWebAuthnChallenge === challenge) {
+        this.currentWebAuthnChallenge = null;
+      }
+      return true;
+    }
+    // Also check single legacy fallback
+    if (this.currentWebAuthnChallenge === challenge) {
+      this.currentWebAuthnChallenge = null;
+      return true;
+    }
+    return false;
+  }
 
   constructor() {
     this.state = this.loadState();
@@ -187,6 +235,8 @@ class SecurityStateManager {
           createdAtIST: formatIST(now),
           lastActiveAt: now.toISOString(),
           lastActiveAtIST: formatIST(now),
+          expiresAt: new Date(now.getTime() + 86400000).toISOString(),
+          expiresAtIST: formatIST(new Date(now.getTime() + 86400000)),
           isCurrent: true
         }
       ],
@@ -244,10 +294,20 @@ class SecurityStateManager {
   }
 
   private loadState(): InternalServerState {
+    const target = getTargetStateFile();
+    const fallbackPath = path.join(process.cwd(), 'server', 'security-state.json');
     try {
-      const targetFile = fs.existsSync(TMP_STATE_FILE) ? TMP_STATE_FILE : (fs.existsSync(STATE_FILE) ? STATE_FILE : null);
-      if (targetFile) {
-        const raw = fs.readFileSync(targetFile, 'utf-8');
+      let fileToRead: string | null = null;
+      if (fs.existsSync(target)) {
+        fileToRead = target;
+      } else if (fs.existsSync(fallbackPath)) {
+        fileToRead = fallbackPath;
+      } else if (fs.existsSync(TMP_STATE_FILE)) {
+        fileToRead = TMP_STATE_FILE;
+      }
+
+      if (fileToRead) {
+        const raw = fs.readFileSync(fileToRead, 'utf-8');
         const parsed = JSON.parse(raw);
         
         // Ensure owner password hash is initialized
@@ -278,6 +338,16 @@ class SecurityStateManager {
           if (!parsed.owner.fcmTokens) {
             parsed.owner.fcmTokens = [];
           }
+          if (!parsed.owner.passkeys) {
+            parsed.owner.passkeys = [];
+          }
+        }
+
+        if (!parsed.sessions) {
+          parsed.sessions = [];
+        }
+        if (!parsed.auditLogs) {
+          parsed.auditLogs = [];
         }
 
         // Auto-migrate authenticators array if legacy state
@@ -307,8 +377,13 @@ class SecurityStateManager {
   }
 
   private saveStateDirect(stateToSave: InternalServerState) {
+    const target = getTargetStateFile();
     try {
-      fs.writeFileSync(STATE_FILE, JSON.stringify(stateToSave, null, 2));
+      const dir = path.dirname(target);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(target, JSON.stringify(stateToSave, null, 2));
     } catch {
       try {
         fs.writeFileSync(TMP_STATE_FILE, JSON.stringify(stateToSave, null, 2));
@@ -393,7 +468,7 @@ class SecurityStateManager {
       whatsappVerified: o.whatsappVerified,
       mfaEnforced: o.mfaEnforced,
       authenticators: sanitizedAuthenticators,
-      passkeys: o.passkeys || [],
+      passkeys: this.getEnrolledPasskeys(),
       recoveryCodesCount: (o.recoveryCodes || []).filter(c => !c.used).length,
       recoveryCodesGeneratedAt: o.recoveryCodesGeneratedAt,
       notificationPreferences: o.notificationPreferences,
@@ -409,6 +484,8 @@ class SecurityStateManager {
       id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       timestamp: now.toISOString(),
       timestampIST: formatIST(now),
+      createdAt: now.toISOString(),
+      createdAtIST: formatIST(now),
       read: false,
       dismissed: false,
       ...notification
@@ -546,13 +623,177 @@ class SecurityStateManager {
     return { allowed: true };
   }
 
+  // Passkey Lifecycle Management
+  public addPasskey(passkey: EnrolledPasskey): { success: boolean; passkey: EnrolledPasskey; duplicate: boolean } {
+    if (!this.state.owner.passkeys) {
+      this.state.owner.passkeys = [];
+    }
+    const now = new Date();
+    if (!passkey.createdAt) passkey.createdAt = now.toISOString();
+    if (!passkey.createdAtIST) passkey.createdAtIST = formatIST(now);
+    const existing = this.state.owner.passkeys.find(p => p.id === passkey.id);
+    if (existing) {
+      existing.lastUsedAt = passkey.lastUsedAt || new Date().toISOString();
+      existing.lastUsedAtIST = formatIST(new Date());
+      if (passkey.transports) existing.transports = passkey.transports;
+      if (passkey.counter !== undefined) existing.counter = passkey.counter;
+      if (passkey.backedUp !== undefined) existing.backedUp = passkey.backedUp;
+      if (passkey.deviceLabel) {
+        existing.deviceLabel = passkey.deviceLabel;
+        existing.nickname = passkey.nickname || passkey.deviceLabel;
+      }
+      existing.revoked = false;
+      this.save();
+      return { success: true, passkey: existing, duplicate: true };
+    }
+    this.state.owner.passkeys.push(passkey);
+    this.save();
+    return { success: true, passkey, duplicate: false };
+  }
+
+  public renamePasskey(id: string, newLabel: string): boolean {
+    if (!this.state.owner.passkeys) return false;
+    const pk = this.state.owner.passkeys.find(p => p.id === id);
+    if (pk) {
+      pk.deviceLabel = newLabel.trim();
+      pk.nickname = newLabel.trim();
+      this.save();
+      return true;
+    }
+    return false;
+  }
+
+  public revokePasskey(id: string): { success: boolean; message: string } {
+    const check = this.canRemoveFactor('PASSKEY', id);
+    if (!check.allowed) {
+      return { success: false, message: check.reason || 'Cannot remove last active factor.' };
+    }
+    if (!this.state.owner.passkeys) return { success: false, message: 'Passkey not found.' };
+    const pk = this.state.owner.passkeys.find(p => p.id === id);
+    if (pk) {
+      pk.revoked = true;
+      pk.revokedAt = new Date().toISOString();
+      this.state.owner.passkeys = this.state.owner.passkeys.filter(p => p.id !== id);
+      this.save();
+      return { success: true, message: 'Passkey revoked successfully.' };
+    }
+    return { success: false, message: 'Passkey not found.' };
+  }
+
+  public touchPasskey(id: string, newCounter?: number): void {
+    if (!this.state.owner.passkeys) return;
+    const pk = this.state.owner.passkeys.find(p => p.id === id);
+    if (pk) {
+      const now = new Date();
+      pk.lastUsedAt = now.toISOString();
+      pk.lastUsedAtIST = formatIST(now);
+      if (newCounter !== undefined && newCounter > pk.counter) {
+        pk.counter = newCounter;
+      }
+      this.save();
+    }
+  }
+
+  public getEnrolledPasskeys(): EnrolledPasskey[] {
+    return (this.state.owner.passkeys || []).filter(p => !p.revoked);
+  }
+
+  // Session Lifecycle Management
+  public createSession(data: { userId: string; ipAddress: string; userAgent: string; browser: string; os: string; deviceType?: 'DESKTOP' | 'MOBILE' | 'TABLET' }): { session: ActiveSession; sessionToken: string } {
+    const now = new Date();
+    const sessionId = `sess_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+    const expiresAtMs = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    const sessionToken = signSessionToken(sessionId, data.userId, expiresAtMs);
+    const sessionTokenHash = sha256(sessionToken);
+
+    const session: ActiveSession = {
+      id: sessionId,
+      sessionTokenHash,
+      userId: data.userId,
+      ipAddress: data.ipAddress,
+      userAgent: data.userAgent,
+      browser: data.browser,
+      os: data.os,
+      deviceType: data.deviceType || ((data.userAgent || '').toLowerCase().includes('mobile') ? 'MOBILE' : 'DESKTOP'),
+      createdAt: now.toISOString(),
+      createdAtIST: formatIST(now),
+      lastActiveAt: now.toISOString(),
+      lastActiveAtIST: formatIST(now),
+      expiresAt: new Date(expiresAtMs).toISOString(),
+      expiresAtIST: formatIST(new Date(expiresAtMs)),
+      isCurrent: false,
+      revoked: false
+    };
+
+    if (!this.state.sessions) {
+      this.state.sessions = [];
+    }
+    this.state.sessions.unshift(session);
+    if (this.state.sessions.length > 50) {
+      this.state.sessions = this.state.sessions.slice(0, 50);
+    }
+    this.save();
+    return { session, sessionToken };
+  }
+
+  public getSession(id: string): ActiveSession | null {
+    if (!this.state.sessions) return null;
+    return this.state.sessions.find(s => s.id === id && !s.revoked) || null;
+  }
+
+  public revokeSession(id: string): boolean {
+    if (!this.state.sessions) return false;
+    const session = this.state.sessions.find(s => s.id === id);
+    if (session) {
+      session.revoked = true;
+      session.revokedAt = new Date().toISOString();
+      this.state.sessions = this.state.sessions.filter(s => s.id !== id);
+      this.save();
+      return true;
+    }
+    return false;
+  }
+
+  public revokeOtherSessions(currentSessionId: string): number {
+    if (!this.state.sessions) return 0;
+    const initialCount = this.state.sessions.length;
+    this.state.sessions = this.state.sessions.filter(s => s.id === currentSessionId);
+    this.save();
+    return initialCount - this.state.sessions.length;
+  }
+
+  public cleanExpiredSessions(): void {
+    if (!this.state.sessions) return;
+    const now = Date.now();
+    this.state.sessions = this.state.sessions.filter(s => {
+      if (s.revoked) return false;
+      if (s.expiresAt) {
+        return now <= new Date(s.expiresAt).getTime();
+      }
+      return now - new Date(s.createdAt).getTime() <= 24 * 60 * 60 * 1000;
+    });
+    this.save();
+  }
+
   public addAuditLog(entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'timestampIST'>) {
     const now = new Date();
+    // Privacy protection: Mask owner email in actor and details
+    let actor = entry.actor;
+    if (actor && actor.includes('@')) {
+      actor = maskEmail(actor);
+    }
+    let details = entry.details;
+    if (details && details.includes('@')) {
+      details = details.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, (match) => maskEmail(match));
+    }
+
     const log: AuditLogEntry = {
       id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       timestamp: now.toISOString(),
       timestampIST: formatIST(now),
-      ...entry
+      ...entry,
+      actor,
+      details
     };
     this.state.auditLogs.unshift(log);
     // Keep max 200 logs

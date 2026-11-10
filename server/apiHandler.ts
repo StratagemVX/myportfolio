@@ -10,7 +10,8 @@ import {
   generateOTPAuthUri, 
   verifyTOTP, 
   safeCompare,
-  formatIST
+  formatIST,
+  verifySessionToken
 } from './cryptoUtils';
 import { stateManager } from './state';
 import { notificationService } from './notificationService';
@@ -33,6 +34,8 @@ import {
 import type { 
   AuthenticatorAppType, 
   EnrolledAuthenticatorApp,
+  EnrolledPasskey,
+  ActiveSession,
   DeliveryStatus
 } from './types';
 import { 
@@ -40,8 +43,73 @@ import {
   registerFCMDeviceTokenInFirestore 
 } from './firebase';
 
-// Extract Bearer Token from Authorization Header
-function extractBearerToken(req: IncomingMessage): string | null {
+// Parse HTTP Cookies from Request Header or cookie string
+export function parseCookies(req: IncomingMessage | string | { headers?: Record<string, any> }): Record<string, string> {
+  const cookieHeader = typeof req === 'string' 
+    ? req 
+    : (req?.headers ? req.headers['cookie'] : undefined);
+  if (!cookieHeader) return {};
+  const cookies: Record<string, string> = {};
+  const pairs = (Array.isArray(cookieHeader) ? cookieHeader.join('; ') : cookieHeader).split(';');
+  for (const pair of pairs) {
+    const idx = pair.indexOf('=');
+    if (idx > 0) {
+      const key = pair.substring(0, idx).trim();
+      const val = pair.substring(idx + 1).trim();
+      cookies[key] = decodeURIComponent(val);
+    }
+  }
+  return cookies;
+}
+
+// Set HttpOnly, Secure, SameSite=Lax Session Cookie
+export function setSessionCookie(res?: ServerResponse | any, token = '', maxAgeSeconds = 86400): string {
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieParts = [
+    `owner_session=${encodeURIComponent(token)}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    `Max-Age=${maxAgeSeconds}`
+  ];
+  if (isProd) {
+    cookieParts.push('Secure');
+  }
+  const cookieStr = cookieParts.join('; ');
+  if (res && typeof res.setHeader === 'function') {
+    res.setHeader('Set-Cookie', cookieStr);
+  }
+  return cookieStr;
+}
+
+// Clear Session Cookie on Logout
+export function clearSessionCookie(res?: ServerResponse | any): string {
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieParts = [
+    'owner_session=',
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    'Max-Age=0'
+  ];
+  if (isProd) {
+    cookieParts.push('Secure');
+  }
+  const cookieStr = cookieParts.join('; ');
+  if (res && typeof res.setHeader === 'function') {
+    res.setHeader('Set-Cookie', cookieStr);
+  }
+  return cookieStr;
+}
+
+// Extract Session Token from HttpOnly Cookie or Bearer Authorization Header
+export function extractSessionToken(req: IncomingMessage): string | null {
+  // 1. Primary: HttpOnly Cookie
+  const cookies = parseCookies(req);
+  if (cookies['owner_session'] && cookies['owner_session'].trim()) {
+    return cookies['owner_session'].trim();
+  }
+  // 2. Secondary: Bearer Authorization Header
   const authHeader = req.headers['authorization'] || '';
   if (typeof authHeader === 'string' && authHeader.toLowerCase().startsWith('bearer ')) {
     return authHeader.substring(7).trim();
@@ -49,26 +117,67 @@ function extractBearerToken(req: IncomingMessage): string | null {
   return null;
 }
 
-// Verify Owner Session from Bearer Token
-function verifyOwnerSession(req: IncomingMessage): boolean {
-  const token = extractBearerToken(req);
-  if (!token) return false;
-  const tokenHash = sha256(token);
+// Central Server-Validated Owner Session Retrieval & Expiration Enforcement
+export function getValidatedSession(req: IncomingMessage): ActiveSession | null {
+  const token = extractSessionToken(req);
+  if (!token) return null;
+
   const state = stateManager.getState();
-  const session = state.sessions.find(s => safeCompare(s.sessionTokenHash, tokenHash));
-  if (!session) return false;
+  const tokenHash = sha256(token);
+
+  // 1. Verify Cryptographic Signature
+  const sigCheck = verifySessionToken(token);
+  if (sigCheck.valid && sigCheck.sessionId) {
+    const existingSession = (state.sessions || []).find(s => s.id === sigCheck.sessionId);
+    if (existingSession) {
+      if (existingSession.revoked) return null;
+      // Touch activity
+      existingSession.lastActiveAt = new Date().toISOString();
+      existingSession.lastActiveAtIST = formatIST(new Date());
+      return existingSession;
+    }
+    // Verified signed token without existing in-memory session (e.g. fresh lambda)
+    const clientMeta = getClientMeta(req);
+    const recoveredSession: ActiveSession = {
+      id: sigCheck.sessionId,
+      sessionTokenHash: tokenHash,
+      userId: sigCheck.userId || state.owner.id,
+      ipAddress: clientMeta.ipAddress,
+      userAgent: clientMeta.userAgent,
+      browser: clientMeta.browser,
+      os: clientMeta.os,
+      createdAt: new Date().toISOString(),
+      createdAtIST: formatIST(),
+      lastActiveAt: new Date().toISOString(),
+      lastActiveAtIST: formatIST(),
+      expiresAt: new Date(sigCheck.expiresAt || Date.now() + 86400000).toISOString(),
+      expiresAtIST: formatIST(new Date(sigCheck.expiresAt || Date.now() + 86400000)),
+      isCurrent: true,
+      revoked: false
+    };
+    return recoveredSession;
+  }
+
+  // 2. Fallback to session store lookup by token hash
+  const session = (state.sessions || []).find(s => safeCompare(s.sessionTokenHash, tokenHash));
+  if (!session) return null;
+  if (session.revoked) return null;
 
   // Enforce session expiration: 24 hours
-  const createdTime = new Date(session.createdAt).getTime();
-  const maxAgeMs = 24 * 60 * 60 * 1000;
-  if (Date.now() - createdTime > maxAgeMs) {
-    return false;
+  const expiryTime = session.expiresAt ? new Date(session.expiresAt).getTime() : (new Date(session.createdAt).getTime() + 24 * 60 * 60 * 1000);
+  if (Date.now() > expiryTime) {
+    return null;
   }
 
   // Touch session activity
   session.lastActiveAt = new Date().toISOString();
   session.lastActiveAtIST = formatIST(new Date());
-  return true;
+  return session;
+}
+
+// Verify Owner Session
+function verifyOwnerSession(req: IncomingMessage): boolean {
+  return getValidatedSession(req) !== null;
 }
 async function parseJsonBody(req: IncomingMessage): Promise<Record<string, any>> {
   try {
@@ -357,6 +466,40 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
     return true;
   }
 
+  // Check and Validate Existing Owner Session (For page refreshes & tab navigation)
+  if (pathname === '/api/auth/session' && method === 'GET') {
+    const session = getValidatedSession(req);
+    if (!session) {
+      sendJson(res, 200, { authenticated: false });
+      return true;
+    }
+    sendJson(res, 200, {
+      authenticated: true,
+      sessionId: session.id,
+      profile: stateManager.getOwnerProfile()
+    });
+    return true;
+  }
+
+  // Terminate Current Owner Session (Logout)
+  if (pathname === '/api/auth/logout' && method === 'POST') {
+    const session = getValidatedSession(req);
+    if (session) {
+      stateManager.revokeSession(session.id);
+      stateManager.addAuditLog({
+        action: 'ADMIN_LOGOUT',
+        category: 'AUTH',
+        status: 'SUCCESS',
+        actor: stateManager.getState().owner.loginEmail,
+        ipAddress: meta.ipAddress,
+        details: `Owner terminated session ${session.id}`
+      });
+    }
+    clearSessionCookie(res);
+    sendJson(res, 200, { success: true, message: 'Session terminated successfully.' });
+    return true;
+  }
+
   // 3. Primary Authentication (Step 1 of Login - Zero Bypass, Strict Validation)
   if (pathname === '/api/auth/login' && method === 'POST') {
     const meta = getClientMeta(req);
@@ -434,7 +577,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
         requireMfa: true,
         challengeToken,
         allowedFactors: ['TOTP', 'WEBAUTHN', 'RECOVERY_CODE'],
-        hasPasskeys: state.owner.passkeys.length > 0,
+        hasPasskeys: stateManager.getEnrolledPasskeys().length > 0,
         message: 'Primary authentication passed. Secondary MFA challenge mandatory.'
       });
     } else {
@@ -505,7 +648,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
       requireMfa: true,
       challengeToken,
       allowedFactors: ['TOTP', 'WEBAUTHN', 'RECOVERY_CODE'],
-      hasPasskeys: state.owner.passkeys.length > 0,
+      hasPasskeys: stateManager.getEnrolledPasskeys().length > 0,
       message: 'Auth0 identity verified. Secondary MFA challenge mandatory.'
     });
     return true;
@@ -545,25 +688,14 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
       }
       stateManager.pendingLoginChallenges.delete(challengeToken);
 
-      const sessionToken = `sess_tok_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
-      const now = new Date();
-      const newSession: any = {
-        id: `sess-${Date.now()}`,
-        sessionTokenHash: sha256(sessionToken),
+      const { sessionToken } = stateManager.createSession({
         userId: state.owner.id,
         ipAddress: meta.ipAddress,
         userAgent: meta.userAgent,
         browser: meta.browser,
-        os: meta.os,
-        createdAt: now.toISOString(),
-        createdAtIST: formatIST(now),
-        lastActiveAt: now.toISOString(),
-        lastActiveAtIST: formatIST(now),
-        isCurrent: true
-      };
-
-      state.sessions.unshift(newSession);
-      stateManager.save();
+        os: meta.os
+      });
+      setSessionCookie(res, sessionToken);
 
       stateManager.addAuditLog({
         action: 'ADMIN_LOGIN_SUCCESS',
@@ -595,7 +727,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
           browser: meta.browser,
           os: meta.os,
           actor: state.owner.loginEmail,
-          timestampIST: formatIST(now)
+          timestampIST: formatIST(new Date())
         }
       });
 
@@ -647,25 +779,14 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
       matched.usedAt = new Date().toISOString();
       stateManager.pendingLoginChallenges.delete(challengeToken);
 
-      const sessionToken = `sess_tok_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
-      const now = new Date();
-      const newSession: any = {
-        id: `sess-${Date.now()}`,
-        sessionTokenHash: sha256(sessionToken),
+      const { sessionToken } = stateManager.createSession({
         userId: state.owner.id,
         ipAddress: meta.ipAddress,
         userAgent: meta.userAgent,
         browser: meta.browser,
-        os: meta.os,
-        createdAt: now.toISOString(),
-        createdAtIST: formatIST(now),
-        lastActiveAt: now.toISOString(),
-        lastActiveAtIST: formatIST(now),
-        isCurrent: true
-      };
-
-      state.sessions.unshift(newSession);
-      stateManager.save();
+        os: meta.os
+      });
+      setSessionCookie(res, sessionToken);
 
       stateManager.addAuditLog({
         action: 'EMERGENCY_RECOVERY_CODE_CONSUMED',
@@ -695,7 +816,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
           browser: meta.browser,
           os: meta.os,
           actor: state.owner.loginEmail,
-          timestampIST: formatIST(now)
+          timestampIST: formatIST(new Date())
         }
       }, true);
 
@@ -787,21 +908,24 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     const body = await parseJsonBody(req);
     const { rpID } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
+    const activePasskeys = stateManager.getEnrolledPasskeys();
+
     const options = await generateAuthenticationOptions({
       rpID,
-      allowCredentials: state.owner.passkeys.map(p => ({
+      allowCredentials: activePasskeys.length > 0 ? activePasskeys.map(p => ({
         id: p.id,
         transports: p.transports
-      })),
+      })) : undefined,
       userVerification: 'preferred'
     });
 
-    stateManager.currentWebAuthnChallenge = options.challenge;
+    stateManager.saveWebAuthnChallenge(options.challenge, 'authentication', state.owner.id);
     sendJson(res, 200, options);
     return true;
   }
 
   if (pathname === '/api/auth/passkey/verify-login' && method === 'POST') {
+    const meta = getClientMeta(req);
     const body = await parseJsonBody(req);
     const { challengeToken, response: authResp } = body;
     const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
@@ -813,9 +937,9 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
       return true;
     }
 
-    const passkey = state.owner.passkeys.find(p => p.id === authResp.id);
+    const passkey = stateManager.getEnrolledPasskeys().find(p => p.id === authResp.id);
     if (!passkey) {
-      sendJson(res, 400, { error: 'Unknown passkey credential ID.' });
+      sendJson(res, 400, { error: 'Unknown or unverified passkey credential. Please use an enrolled passkey.' });
       return true;
     }
 
@@ -830,34 +954,25 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
           publicKey: Buffer.from(passkey.publicKey, 'base64url'),
           counter: passkey.counter,
           transports: passkey.transports
-        }
+        },
+        requireUserVerification: false
       });
 
       if (verification.verified) {
-        passkey.counter = verification.authenticationInfo.newCounter;
-        passkey.lastUsedAt = new Date().toISOString();
-        stateManager.currentWebAuthnChallenge = null;
+        stateManager.touchPasskey(passkey.id, verification.authenticationInfo.newCounter);
+        stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, 'authentication');
         if (challengeToken) {
           stateManager.pendingLoginChallenges.delete(challengeToken);
         }
 
-        const sessionToken = `sess_tok_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
-        const now = new Date();
-        state.sessions.unshift({
-          id: `sess-${Date.now()}`,
-          sessionTokenHash: sha256(sessionToken),
+        const { sessionToken } = stateManager.createSession({
           userId: state.owner.id,
           ipAddress: meta.ipAddress,
           userAgent: meta.userAgent,
           browser: meta.browser,
-          os: meta.os,
-          createdAt: now.toISOString(),
-          createdAtIST: formatIST(now),
-          lastActiveAt: now.toISOString(),
-          lastActiveAtIST: formatIST(now),
-          isCurrent: true
+          os: meta.os
         });
-        stateManager.save();
+        setSessionCookie(res, sessionToken);
 
         stateManager.addAuditLog({
           action: 'PASSKEY_AUTHENTICATION_SUCCESS',
@@ -1521,11 +1636,17 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     return true;
   }
 
-  // 13. Passkey Registration: Options & Verify
+  // 13. Passkey Registration: Options & Verify (Requires Authenticated Owner Session)
   if (pathname === '/api/mfa/passkey/register-options' && method === 'POST') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { rpID } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
+    const activePasskeys = stateManager.getEnrolledPasskeys();
+
     const options = await generateRegistrationOptions({
       rpName: 'Chethan Kumar Portfolio Security',
       rpID,
@@ -1533,7 +1654,7 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
       userName: state.owner.loginEmail,
       userDisplayName: state.owner.displayName,
       attestationType: 'none',
-      excludeCredentials: state.owner.passkeys.map(p => ({
+      excludeCredentials: activePasskeys.map(p => ({
         id: p.id,
         transports: p.transports
       })),
@@ -1543,12 +1664,16 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
       }
     });
 
-    stateManager.currentWebAuthnChallenge = options.challenge;
+    stateManager.saveWebAuthnChallenge(options.challenge, 'registration', state.owner.id);
     sendJson(res, 200, options);
     return true;
   }
 
   if (pathname === '/api/mfa/passkey/register-verify' && method === 'POST') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { deviceLabel, response: regResp } = body;
     const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
@@ -1565,28 +1690,33 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
         response: regResp as RegistrationResponseJSON,
         expectedChallenge,
         expectedOrigin,
-        expectedRPID
+        expectedRPID,
+        requireUserVerification: false
       });
 
       if (verification.verified && verification.registrationInfo) {
-        const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
+        const { credential, credentialDeviceType, credentialBackedUp, aaguid } = verification.registrationInfo;
         const now = new Date();
 
-        const passkeyEntry: any = {
+        const passkeyEntry: EnrolledPasskey = {
           id: credential.id,
           publicKey: Buffer.from(credential.publicKey).toString('base64url'),
           counter: credential.counter,
           deviceType: credentialDeviceType,
           backedUp: credentialBackedUp,
-          transports: credential.transports,
+          transports: credential.transports as any,
+          aaguid,
           deviceLabel: (deviceLabel || 'Hardware Passkey / Security Key').trim(),
+          nickname: (deviceLabel || 'Hardware Passkey / Security Key').trim(),
           createdAt: now.toISOString(),
-          lastUsedAt: null
+          createdAtIST: formatIST(now),
+          lastUsedAt: null,
+          lastUsedAtIST: null,
+          revoked: false
         };
 
-        state.owner.passkeys.push(passkeyEntry);
-        stateManager.currentWebAuthnChallenge = null;
-        stateManager.save();
+        const result = stateManager.addPasskey(passkeyEntry);
+        stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, 'registration');
 
         stateManager.addAuditLog({
           action: 'PASSKEY_ENROLLED',
@@ -1614,8 +1744,8 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
         sendJson(res, 200, {
           success: true,
-          passkeys: state.owner.passkeys,
-          message: 'Passkey successfully enrolled and active.'
+          passkeys: stateManager.getEnrolledPasskeys(),
+          message: result.duplicate ? 'Passkey was already registered and has been updated.' : 'Passkey successfully enrolled and active.'
         });
         return true;
       }
@@ -1626,33 +1756,65 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     }
   }
 
-  if (pathname.startsWith('/api/mfa/passkey/') && method === 'DELETE') {
+  // Rename Enrolled Passkey
+  if (pathname.startsWith('/api/mfa/passkey/') && method === 'PATCH') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const id = pathname.replace('/api/mfa/passkey/', '');
-    const state = stateManager.getState();
-
-    const check = stateManager.canRemoveFactor('PASSKEY', id);
-    if (!check.allowed) {
-      sendJson(res, 400, { error: check.reason });
+    const body = await parseJsonBody(req);
+    const newLabel = (body.deviceLabel || body.label || body.nickname || '').trim();
+    if (!newLabel) {
+      sendJson(res, 400, { error: 'Passkey nickname/label cannot be empty.' });
       return true;
     }
 
-    const beforeCount = state.owner.passkeys.length;
-    state.owner.passkeys = state.owner.passkeys.filter(p => p.id !== id);
-
-    if (state.owner.passkeys.length < beforeCount) {
-      stateManager.save();
+    const renamed = stateManager.renamePasskey(id, newLabel);
+    if (renamed) {
       stateManager.addAuditLog({
-        action: 'PASSKEY_REVOKED',
+        action: 'PASSKEY_RENAMED',
         category: 'PASSKEY',
-        status: 'WARNING',
-        actor: state.owner.displayName,
+        status: 'SUCCESS',
+        actor: stateManager.getState().owner.loginEmail,
         ipAddress: meta.ipAddress,
-        details: `Revoked passkey ID prefix ${id.substring(0, 8)}••••`
+        details: `Renamed passkey credential to: "${newLabel}"`
       });
-      sendJson(res, 200, { success: true, message: 'Passkey revoked successfully.' });
+      sendJson(res, 200, {
+        success: true,
+        message: 'Passkey nickname updated successfully.',
+        passkeys: stateManager.getEnrolledPasskeys()
+      });
     } else {
-      sendJson(res, 404, { error: 'Passkey not found.' });
+      sendJson(res, 404, { error: 'Passkey credential not found.' });
     }
+    return true;
+  }
+
+  // Revoke Enrolled Passkey
+  if (pathname.startsWith('/api/mfa/passkey/') && method === 'DELETE') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
+    const id = pathname.replace('/api/mfa/passkey/', '');
+
+    const result = stateManager.revokePasskey(id);
+    if (!result.success) {
+      sendJson(res, 400, { error: result.message });
+      return true;
+    }
+
+    stateManager.addAuditLog({
+      action: 'PASSKEY_REVOKED',
+      category: 'PASSKEY',
+      status: 'WARNING',
+      actor: stateManager.getState().owner.loginEmail,
+      ipAddress: meta.ipAddress,
+      details: `Revoked passkey ID prefix ${id.substring(0, 8)}••••`
+    });
+
+    sendJson(res, 200, { success: true, message: 'Passkey revoked successfully.', passkeys: stateManager.getEnrolledPasskeys() });
     return true;
   }
 
@@ -2019,57 +2181,68 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
   // 17. Active Sessions Management
   if (pathname === '/api/sessions' && method === 'GET') {
-    if (!verifyOwnerSession(req)) {
+    const session = getValidatedSession(req);
+    if (!session) {
       sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
       return true;
     }
+    stateManager.cleanExpiredSessions();
     const state = stateManager.getState();
-    sendJson(res, 200, { sessions: state.sessions });
+    const sessionsList = (state.sessions || [])
+      .filter(s => !s.revoked)
+      .map(s => ({
+        ...s,
+        isCurrent: s.id === session.id
+      }));
+    sendJson(res, 200, { sessions: sessionsList });
     return true;
   }
 
   if (pathname.startsWith('/api/sessions/') && method === 'DELETE') {
-    if (!verifyOwnerSession(req)) {
+    const session = getValidatedSession(req);
+    if (!session) {
       sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
       return true;
     }
     const id = pathname.replace('/api/sessions/', '');
-    const state = stateManager.getState();
-    state.sessions = state.sessions.filter(s => s.id !== id);
-    stateManager.save();
+    const isCurrentSession = (id === session.id);
+    stateManager.revokeSession(id);
+
+    if (isCurrentSession) {
+      clearSessionCookie(res);
+    }
 
     stateManager.addAuditLog({
       action: 'ADMIN_SESSION_REVOKED',
       category: 'SESSIONS',
       status: 'SUCCESS',
-      actor: state.owner.loginEmail,
+      actor: stateManager.getState().owner.loginEmail,
       ipAddress: meta.ipAddress,
-      details: `Revoked session ${id}`
+      details: isCurrentSession ? `Current workstation session revoked (${id})` : `Revoked active session ${id}`
     });
 
-    sendJson(res, 200, { success: true, message: 'Session revoked.' });
+    sendJson(res, 200, { success: true, message: 'Session revoked.', isCurrentSession });
     return true;
   }
 
   if (pathname === '/api/sessions/revoke-others' && method === 'POST') {
-    if (!verifyOwnerSession(req)) {
+    const session = getValidatedSession(req);
+    if (!session) {
       sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
       return true;
     }
-    const state = stateManager.getState();
-    state.sessions = state.sessions.filter(s => s.isCurrent);
-    stateManager.save();
+    const count = stateManager.revokeOtherSessions(session.id);
 
     stateManager.addAuditLog({
       action: 'ALL_OTHER_SESSIONS_REVOKED',
       category: 'SESSIONS',
       status: 'SUCCESS',
-      actor: state.owner.loginEmail,
+      actor: stateManager.getState().owner.loginEmail,
       ipAddress: meta.ipAddress,
-      details: 'Owner terminated all other concurrent active sessions.'
+      details: `Owner terminated all other concurrent active sessions (${count} session(s) signed out).`
     });
 
-    sendJson(res, 200, { success: true, message: 'All other active sessions have been terminated.' });
+    sendJson(res, 200, { success: true, message: 'All other active sessions have been terminated.', revokedCount: count });
     return true;
   }
 
@@ -2080,7 +2253,14 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
       return true;
     }
     const state = stateManager.getState();
-    sendJson(res, 200, { logs: state.auditLogs });
+    const sanitizedLogs = (state.auditLogs || []).map(log => ({
+      ...log,
+      actor: log.actor && log.actor.includes('@') ? maskEmail(log.actor) : log.actor,
+      details: log.details && log.details.includes('@')
+        ? log.details.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, (match) => maskEmail(match))
+        : log.details
+    }));
+    sendJson(res, 200, { logs: sanitizedLogs });
     return true;
   }
 

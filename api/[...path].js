@@ -3,7 +3,17 @@ import "dotenv/config";
 
 // server/cryptoUtils.ts
 import crypto from "node:crypto";
-function formatIST(date = /* @__PURE__ */ new Date()) {
+function formatIST(dateInput) {
+  if (!dateInput) dateInput = /* @__PURE__ */ new Date();
+  let date;
+  if (dateInput instanceof Date) {
+    date = isNaN(dateInput.getTime()) ? /* @__PURE__ */ new Date() : dateInput;
+  } else {
+    date = new Date(dateInput);
+    if (isNaN(date.getTime())) {
+      date = /* @__PURE__ */ new Date();
+    }
+  }
   const istOffset = 5.5 * 60 * 60 * 1e3;
   const istDate = new Date(date.getTime() + istOffset);
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -33,6 +43,30 @@ function verifyPassword(password, hash, salt) {
 var INTERNAL_HMAC_SECRET = process.env.SECURITY_HMAC_KEY || "portfolio-security-hmac-seed-ck-2026";
 function hmacSha256(data, secret = INTERNAL_HMAC_SECRET) {
   return crypto.createHmac("sha256", secret).update(data).digest("hex");
+}
+function signSessionToken(sessionId, userId, expiresAt) {
+  const payload = `${sessionId}.${userId}.${expiresAt}`;
+  const sig = hmacSha256(payload, INTERNAL_HMAC_SECRET);
+  return `sess_${payload}.${sig}`;
+}
+function verifySessionToken(token) {
+  if (!token || typeof token !== "string") return { valid: false };
+  if (!token.startsWith("sess_")) return { valid: false };
+  const rest = token.substring(5);
+  const parts = rest.split(".");
+  if (parts.length !== 4) {
+    return { valid: false };
+  }
+  const [sessionId, userId, expiresAtStr, sig] = parts;
+  const expiresAt = parseInt(expiresAtStr, 10);
+  if (isNaN(expiresAt) || Date.now() > expiresAt) {
+    return { valid: false };
+  }
+  const expectedSig = hmacSha256(`${sessionId}.${userId}.${expiresAtStr}`, INTERNAL_HMAC_SECRET);
+  if (!safeCompare(sig, expectedSig)) {
+    return { valid: false };
+  }
+  return { valid: true, sessionId, userId, expiresAt };
 }
 function safeCompare(a, b) {
   if (typeof a !== "string" || typeof b !== "string") return false;
@@ -132,6 +166,7 @@ function generateOTPAuthUri(secret, accountEmail, issuer = "ChethanKumarPortfoli
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import crypto2 from "node:crypto";
 
 // server/types.ts
 function maskEmail(email) {
@@ -157,17 +192,58 @@ function maskPhone(phone) {
 }
 
 // server/state.ts
-var STATE_FILE = path.join(process.cwd(), "server", "security-state.json");
+function getTargetStateFile() {
+  if (process.env.STATE_FILE_PATH) {
+    return process.env.STATE_FILE_PATH;
+  }
+  if (fs.existsSync("/app/data")) {
+    return path.join("/app", "data", "security-state.json");
+  }
+  return path.join(process.cwd(), "server", "security-state.json");
+}
 var TMP_STATE_FILE = path.join(os.tmpdir(), "chethan-portfolio-security-state.json");
 var SecurityStateManager = class {
   state;
   // Ephemeral in-memory challenges (never stored to disk)
   currentWebAuthnChallenge = null;
+  webauthnChallenges = /* @__PURE__ */ new Map();
   pendingEmailOTP = null;
   pendingPhoneOTP = null;
   pendingEmailChange = null;
   pendingRecoveryEmailChange = null;
   pendingLoginChallenges = /* @__PURE__ */ new Map();
+  saveWebAuthnChallenge(challenge, type, userId) {
+    this.currentWebAuthnChallenge = challenge;
+    const now = Date.now();
+    this.webauthnChallenges.set(challenge, {
+      challenge,
+      type,
+      expiresAt: now + 5 * 60 * 1e3,
+      // 5 minutes
+      userId
+    });
+    if (this.webauthnChallenges.size > 50) {
+      for (const [k, v] of this.webauthnChallenges.entries()) {
+        if (now > v.expiresAt) this.webauthnChallenges.delete(k);
+      }
+    }
+  }
+  verifyAndConsumeWebAuthnChallenge(challenge, type) {
+    if (!challenge) return false;
+    const entry = this.webauthnChallenges.get(challenge);
+    if (entry && entry.type === type && Date.now() <= entry.expiresAt) {
+      this.webauthnChallenges.delete(challenge);
+      if (this.currentWebAuthnChallenge === challenge) {
+        this.currentWebAuthnChallenge = null;
+      }
+      return true;
+    }
+    if (this.currentWebAuthnChallenge === challenge) {
+      this.currentWebAuthnChallenge = null;
+      return true;
+    }
+    return false;
+  }
   constructor() {
     this.state = this.loadState();
   }
@@ -261,6 +337,8 @@ var SecurityStateManager = class {
           createdAtIST: formatIST(now),
           lastActiveAt: now.toISOString(),
           lastActiveAtIST: formatIST(now),
+          expiresAt: new Date(now.getTime() + 864e5).toISOString(),
+          expiresAtIST: formatIST(new Date(now.getTime() + 864e5)),
           isCurrent: true
         }
       ],
@@ -317,10 +395,19 @@ var SecurityStateManager = class {
     };
   }
   loadState() {
+    const target = getTargetStateFile();
+    const fallbackPath = path.join(process.cwd(), "server", "security-state.json");
     try {
-      const targetFile = fs.existsSync(TMP_STATE_FILE) ? TMP_STATE_FILE : fs.existsSync(STATE_FILE) ? STATE_FILE : null;
-      if (targetFile) {
-        const raw = fs.readFileSync(targetFile, "utf-8");
+      let fileToRead = null;
+      if (fs.existsSync(target)) {
+        fileToRead = target;
+      } else if (fs.existsSync(fallbackPath)) {
+        fileToRead = fallbackPath;
+      } else if (fs.existsSync(TMP_STATE_FILE)) {
+        fileToRead = TMP_STATE_FILE;
+      }
+      if (fileToRead) {
+        const raw = fs.readFileSync(fileToRead, "utf-8");
         const parsed = JSON.parse(raw);
         if (parsed.owner && (!parsed.owner.passwordHash || !parsed.owner.passwordSalt)) {
           const salt = generateSalt();
@@ -347,6 +434,15 @@ var SecurityStateManager = class {
           if (!parsed.owner.fcmTokens) {
             parsed.owner.fcmTokens = [];
           }
+          if (!parsed.owner.passkeys) {
+            parsed.owner.passkeys = [];
+          }
+        }
+        if (!parsed.sessions) {
+          parsed.sessions = [];
+        }
+        if (!parsed.auditLogs) {
+          parsed.auditLogs = [];
         }
         if (parsed.owner && !parsed.owner.authenticators) {
           parsed.owner.authenticators = [];
@@ -372,8 +468,13 @@ var SecurityStateManager = class {
     return defaultState;
   }
   saveStateDirect(stateToSave) {
+    const target = getTargetStateFile();
     try {
-      fs.writeFileSync(STATE_FILE, JSON.stringify(stateToSave, null, 2));
+      const dir = path.dirname(target);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(target, JSON.stringify(stateToSave, null, 2));
     } catch {
       try {
         fs.writeFileSync(TMP_STATE_FILE, JSON.stringify(stateToSave, null, 2));
@@ -444,7 +545,7 @@ var SecurityStateManager = class {
       whatsappVerified: o.whatsappVerified,
       mfaEnforced: o.mfaEnforced,
       authenticators: sanitizedAuthenticators,
-      passkeys: o.passkeys || [],
+      passkeys: this.getEnrolledPasskeys(),
       recoveryCodesCount: (o.recoveryCodes || []).filter((c) => !c.used).length,
       recoveryCodesGeneratedAt: o.recoveryCodesGeneratedAt,
       notificationPreferences: o.notificationPreferences,
@@ -459,6 +560,8 @@ var SecurityStateManager = class {
       id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       timestamp: now.toISOString(),
       timestampIST: formatIST(now),
+      createdAt: now.toISOString(),
+      createdAtIST: formatIST(now),
       read: false,
       dismissed: false,
       ...notification
@@ -576,13 +679,163 @@ var SecurityStateManager = class {
     }
     return { allowed: true };
   }
+  // Passkey Lifecycle Management
+  addPasskey(passkey) {
+    if (!this.state.owner.passkeys) {
+      this.state.owner.passkeys = [];
+    }
+    const now = /* @__PURE__ */ new Date();
+    if (!passkey.createdAt) passkey.createdAt = now.toISOString();
+    if (!passkey.createdAtIST) passkey.createdAtIST = formatIST(now);
+    const existing = this.state.owner.passkeys.find((p) => p.id === passkey.id);
+    if (existing) {
+      existing.lastUsedAt = passkey.lastUsedAt || (/* @__PURE__ */ new Date()).toISOString();
+      existing.lastUsedAtIST = formatIST(/* @__PURE__ */ new Date());
+      if (passkey.transports) existing.transports = passkey.transports;
+      if (passkey.counter !== void 0) existing.counter = passkey.counter;
+      if (passkey.backedUp !== void 0) existing.backedUp = passkey.backedUp;
+      if (passkey.deviceLabel) {
+        existing.deviceLabel = passkey.deviceLabel;
+        existing.nickname = passkey.nickname || passkey.deviceLabel;
+      }
+      existing.revoked = false;
+      this.save();
+      return { success: true, passkey: existing, duplicate: true };
+    }
+    this.state.owner.passkeys.push(passkey);
+    this.save();
+    return { success: true, passkey, duplicate: false };
+  }
+  renamePasskey(id, newLabel) {
+    if (!this.state.owner.passkeys) return false;
+    const pk = this.state.owner.passkeys.find((p) => p.id === id);
+    if (pk) {
+      pk.deviceLabel = newLabel.trim();
+      pk.nickname = newLabel.trim();
+      this.save();
+      return true;
+    }
+    return false;
+  }
+  revokePasskey(id) {
+    const check = this.canRemoveFactor("PASSKEY", id);
+    if (!check.allowed) {
+      return { success: false, message: check.reason || "Cannot remove last active factor." };
+    }
+    if (!this.state.owner.passkeys) return { success: false, message: "Passkey not found." };
+    const pk = this.state.owner.passkeys.find((p) => p.id === id);
+    if (pk) {
+      pk.revoked = true;
+      pk.revokedAt = (/* @__PURE__ */ new Date()).toISOString();
+      this.state.owner.passkeys = this.state.owner.passkeys.filter((p) => p.id !== id);
+      this.save();
+      return { success: true, message: "Passkey revoked successfully." };
+    }
+    return { success: false, message: "Passkey not found." };
+  }
+  touchPasskey(id, newCounter) {
+    if (!this.state.owner.passkeys) return;
+    const pk = this.state.owner.passkeys.find((p) => p.id === id);
+    if (pk) {
+      const now = /* @__PURE__ */ new Date();
+      pk.lastUsedAt = now.toISOString();
+      pk.lastUsedAtIST = formatIST(now);
+      if (newCounter !== void 0 && newCounter > pk.counter) {
+        pk.counter = newCounter;
+      }
+      this.save();
+    }
+  }
+  getEnrolledPasskeys() {
+    return (this.state.owner.passkeys || []).filter((p) => !p.revoked);
+  }
+  // Session Lifecycle Management
+  createSession(data) {
+    const now = /* @__PURE__ */ new Date();
+    const sessionId = `sess_${Date.now()}_${crypto2.randomBytes(6).toString("hex")}`;
+    const expiresAtMs = Date.now() + 24 * 60 * 60 * 1e3;
+    const sessionToken = signSessionToken(sessionId, data.userId, expiresAtMs);
+    const sessionTokenHash = sha256(sessionToken);
+    const session = {
+      id: sessionId,
+      sessionTokenHash,
+      userId: data.userId,
+      ipAddress: data.ipAddress,
+      userAgent: data.userAgent,
+      browser: data.browser,
+      os: data.os,
+      deviceType: data.deviceType || ((data.userAgent || "").toLowerCase().includes("mobile") ? "MOBILE" : "DESKTOP"),
+      createdAt: now.toISOString(),
+      createdAtIST: formatIST(now),
+      lastActiveAt: now.toISOString(),
+      lastActiveAtIST: formatIST(now),
+      expiresAt: new Date(expiresAtMs).toISOString(),
+      expiresAtIST: formatIST(new Date(expiresAtMs)),
+      isCurrent: false,
+      revoked: false
+    };
+    if (!this.state.sessions) {
+      this.state.sessions = [];
+    }
+    this.state.sessions.unshift(session);
+    if (this.state.sessions.length > 50) {
+      this.state.sessions = this.state.sessions.slice(0, 50);
+    }
+    this.save();
+    return { session, sessionToken };
+  }
+  getSession(id) {
+    if (!this.state.sessions) return null;
+    return this.state.sessions.find((s) => s.id === id && !s.revoked) || null;
+  }
+  revokeSession(id) {
+    if (!this.state.sessions) return false;
+    const session = this.state.sessions.find((s) => s.id === id);
+    if (session) {
+      session.revoked = true;
+      session.revokedAt = (/* @__PURE__ */ new Date()).toISOString();
+      this.state.sessions = this.state.sessions.filter((s) => s.id !== id);
+      this.save();
+      return true;
+    }
+    return false;
+  }
+  revokeOtherSessions(currentSessionId) {
+    if (!this.state.sessions) return 0;
+    const initialCount = this.state.sessions.length;
+    this.state.sessions = this.state.sessions.filter((s) => s.id === currentSessionId);
+    this.save();
+    return initialCount - this.state.sessions.length;
+  }
+  cleanExpiredSessions() {
+    if (!this.state.sessions) return;
+    const now = Date.now();
+    this.state.sessions = this.state.sessions.filter((s) => {
+      if (s.revoked) return false;
+      if (s.expiresAt) {
+        return now <= new Date(s.expiresAt).getTime();
+      }
+      return now - new Date(s.createdAt).getTime() <= 24 * 60 * 60 * 1e3;
+    });
+    this.save();
+  }
   addAuditLog(entry) {
     const now = /* @__PURE__ */ new Date();
+    let actor = entry.actor;
+    if (actor && actor.includes("@")) {
+      actor = maskEmail(actor);
+    }
+    let details = entry.details;
+    if (details && details.includes("@")) {
+      details = details.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, (match) => maskEmail(match));
+    }
     const log = {
       id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       timestamp: now.toISOString(),
       timestampIST: formatIST(now),
-      ...entry
+      ...entry,
+      actor,
+      details
     };
     this.state.auditLogs.unshift(log);
     if (this.state.auditLogs.length > 200) {
@@ -597,10 +850,20 @@ var stateManager = new SecurityStateManager();
 // server/notificationService.ts
 import "dotenv/config";
 import nodemailer from "nodemailer";
-import crypto2 from "node:crypto";
+import crypto3 from "node:crypto";
 import fs2 from "node:fs";
 import path2 from "node:path";
-var NOTIFICATIONS_FILE = path2.join(process.cwd(), "server", "notifications-log.json");
+import os2 from "node:os";
+function getNotificationsLogPath() {
+  if (process.env.NOTIFICATIONS_LOG_PATH) {
+    return process.env.NOTIFICATIONS_LOG_PATH;
+  }
+  if (fs2.existsSync("/app/data")) {
+    return path2.join("/app", "data", "notifications-log.json");
+  }
+  return path2.join(process.cwd(), "server", "notifications-log.json");
+}
+var TMP_NOTIFICATIONS_FILE = path2.join(os2.tmpdir(), "chethan-portfolio-notifications-log.json");
 var NotificationService = class {
   history = [];
   idempotencyCache = /* @__PURE__ */ new Map();
@@ -628,8 +891,18 @@ var NotificationService = class {
   }
   loadHistory() {
     try {
-      if (fs2.existsSync(NOTIFICATIONS_FILE)) {
-        const raw = fs2.readFileSync(NOTIFICATIONS_FILE, "utf-8");
+      const target = getNotificationsLogPath();
+      const seedFile = path2.join(process.cwd(), "server", "notifications-log.json");
+      let fileToRead = null;
+      if (fs2.existsSync(target)) {
+        fileToRead = target;
+      } else if (fs2.existsSync(seedFile)) {
+        fileToRead = seedFile;
+      } else if (fs2.existsSync(TMP_NOTIFICATIONS_FILE)) {
+        fileToRead = TMP_NOTIFICATIONS_FILE;
+      }
+      if (fileToRead) {
+        const raw = fs2.readFileSync(fileToRead, "utf-8");
         const parsed = JSON.parse(raw);
         this.history = (Array.isArray(parsed) ? parsed : []).map((r) => this.normalizeRecord(r));
       }
@@ -682,9 +955,18 @@ var NotificationService = class {
     };
   }
   saveHistory() {
+    const target = getNotificationsLogPath();
     try {
-      fs2.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify(this.history.slice(0, 150), null, 2));
+      const dir = path2.dirname(target);
+      if (!fs2.existsSync(dir)) {
+        fs2.mkdirSync(dir, { recursive: true });
+      }
+      fs2.writeFileSync(target, JSON.stringify(this.history.slice(0, 150), null, 2));
     } catch {
+      try {
+        fs2.writeFileSync(TMP_NOTIFICATIONS_FILE, JSON.stringify(this.history.slice(0, 150), null, 2));
+      } catch {
+      }
     }
   }
   getHistory() {
@@ -694,23 +976,23 @@ var NotificationService = class {
    * Collision-resistant idempotency key generator
    */
   generateIdempotencyKey(channel, eventType, destination, content) {
-    const timeBucket = Math.floor(Date.now() / 6e4);
+    const timeBucket = Math.floor(Date.now() / 1e4);
     const raw = `${channel}:${eventType}:${destination}:${content.trim()}:${timeBucket}`;
     return `idemp_${sha256(raw).substring(0, 24)}`;
   }
   /**
-   * Check if a dispatch with the same idempotency key was executed within the 60s window
+   * Check if a dispatch with the same idempotency key was executed within the 10s window
    */
   isDuplicateDispatch(idempotencyKey) {
     const lastSeen = this.idempotencyCache.get(idempotencyKey);
-    if (lastSeen && Date.now() - lastSeen < 6e4) {
+    if (lastSeen && Date.now() - lastSeen < 1e4) {
       return true;
     }
     this.idempotencyCache.set(idempotencyKey, Date.now());
     if (this.idempotencyCache.size > 200) {
       const now = Date.now();
       for (const [k, v] of this.idempotencyCache.entries()) {
-        if (now - v > 6e5) this.idempotencyCache.delete(k);
+        if (now - v > 6e4) this.idempotencyCache.delete(k);
       }
     }
     return false;
@@ -850,7 +1132,7 @@ Security Console: https://chethankumar.dev/admin
         message: "Duplicate email alert suppressed by idempotency protection."
       };
     }
-    const eventId = `email_${Date.now()}_${crypto2.randomBytes(4).toString("hex")}`;
+    const eventId = `email_${Date.now()}_${crypto3.randomBytes(4).toString("hex")}`;
     const twilioAuthHeader = this.getTwilioAuthHeader();
     const twilioEmailFrom = process.env.TWILIO_EMAIL_FROM_ADDRESS || process.env.EMAIL_FROM_ADDRESS;
     const emailProvider = process.env.EMAIL_PROVIDER || "twilio";
@@ -1226,7 +1508,7 @@ Security Console: https://chethankumar.dev/admin
         message: "Duplicate SMS alert suppressed by idempotency protection."
       };
     }
-    const eventId = `sms_${Date.now()}_${crypto2.randomBytes(4).toString("hex")}`;
+    const eventId = `sms_${Date.now()}_${crypto3.randomBytes(4).toString("hex")}`;
     try {
       const params = new URLSearchParams();
       params.append("To", destination);
@@ -1414,7 +1696,7 @@ Security Console: https://chethankumar.dev/admin
         message: "Duplicate WhatsApp alert suppressed by idempotency protection."
       };
     }
-    const eventId = `wa_${Date.now()}_${crypto2.randomBytes(4).toString("hex")}`;
+    const eventId = `wa_${Date.now()}_${crypto3.randomBytes(4).toString("hex")}`;
     try {
       const fromParam = whatsAppFrom.startsWith("whatsapp:") ? whatsAppFrom : `whatsapp:${whatsAppFrom}`;
       const toParam = destination.startsWith("whatsapp:") ? destination : `whatsapp:${destination}`;
@@ -1897,28 +2179,115 @@ async function registerFCMDeviceTokenInFirestore(tokenData) {
 }
 
 // server/apiHandler.ts
-function extractBearerToken(req) {
+function parseCookies(req) {
+  const cookieHeader = typeof req === "string" ? req : req?.headers ? req.headers["cookie"] : void 0;
+  if (!cookieHeader) return {};
+  const cookies = {};
+  const pairs = (Array.isArray(cookieHeader) ? cookieHeader.join("; ") : cookieHeader).split(";");
+  for (const pair of pairs) {
+    const idx = pair.indexOf("=");
+    if (idx > 0) {
+      const key = pair.substring(0, idx).trim();
+      const val = pair.substring(idx + 1).trim();
+      cookies[key] = decodeURIComponent(val);
+    }
+  }
+  return cookies;
+}
+function setSessionCookie(res, token = "", maxAgeSeconds = 86400) {
+  const isProd = process.env.NODE_ENV === "production";
+  const cookieParts = [
+    `owner_session=${encodeURIComponent(token)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${maxAgeSeconds}`
+  ];
+  if (isProd) {
+    cookieParts.push("Secure");
+  }
+  const cookieStr = cookieParts.join("; ");
+  if (res && typeof res.setHeader === "function") {
+    res.setHeader("Set-Cookie", cookieStr);
+  }
+  return cookieStr;
+}
+function clearSessionCookie(res) {
+  const isProd = process.env.NODE_ENV === "production";
+  const cookieParts = [
+    "owner_session=",
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    "Max-Age=0"
+  ];
+  if (isProd) {
+    cookieParts.push("Secure");
+  }
+  const cookieStr = cookieParts.join("; ");
+  if (res && typeof res.setHeader === "function") {
+    res.setHeader("Set-Cookie", cookieStr);
+  }
+  return cookieStr;
+}
+function extractSessionToken(req) {
+  const cookies = parseCookies(req);
+  if (cookies["owner_session"] && cookies["owner_session"].trim()) {
+    return cookies["owner_session"].trim();
+  }
   const authHeader = req.headers["authorization"] || "";
   if (typeof authHeader === "string" && authHeader.toLowerCase().startsWith("bearer ")) {
     return authHeader.substring(7).trim();
   }
   return null;
 }
-function verifyOwnerSession(req) {
-  const token = extractBearerToken(req);
-  if (!token) return false;
-  const tokenHash = sha256(token);
+function getValidatedSession(req) {
+  const token = extractSessionToken(req);
+  if (!token) return null;
   const state = stateManager.getState();
-  const session = state.sessions.find((s) => safeCompare(s.sessionTokenHash, tokenHash));
-  if (!session) return false;
-  const createdTime = new Date(session.createdAt).getTime();
-  const maxAgeMs = 24 * 60 * 60 * 1e3;
-  if (Date.now() - createdTime > maxAgeMs) {
-    return false;
+  const tokenHash = sha256(token);
+  const sigCheck = verifySessionToken(token);
+  if (sigCheck.valid && sigCheck.sessionId) {
+    const existingSession = (state.sessions || []).find((s) => s.id === sigCheck.sessionId);
+    if (existingSession) {
+      if (existingSession.revoked) return null;
+      existingSession.lastActiveAt = (/* @__PURE__ */ new Date()).toISOString();
+      existingSession.lastActiveAtIST = formatIST(/* @__PURE__ */ new Date());
+      return existingSession;
+    }
+    const clientMeta = getClientMeta(req);
+    const recoveredSession = {
+      id: sigCheck.sessionId,
+      sessionTokenHash: tokenHash,
+      userId: sigCheck.userId || state.owner.id,
+      ipAddress: clientMeta.ipAddress,
+      userAgent: clientMeta.userAgent,
+      browser: clientMeta.browser,
+      os: clientMeta.os,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      createdAtIST: formatIST(),
+      lastActiveAt: (/* @__PURE__ */ new Date()).toISOString(),
+      lastActiveAtIST: formatIST(),
+      expiresAt: new Date(sigCheck.expiresAt || Date.now() + 864e5).toISOString(),
+      expiresAtIST: formatIST(new Date(sigCheck.expiresAt || Date.now() + 864e5)),
+      isCurrent: true,
+      revoked: false
+    };
+    return recoveredSession;
+  }
+  const session = (state.sessions || []).find((s) => safeCompare(s.sessionTokenHash, tokenHash));
+  if (!session) return null;
+  if (session.revoked) return null;
+  const expiryTime = session.expiresAt ? new Date(session.expiresAt).getTime() : new Date(session.createdAt).getTime() + 24 * 60 * 60 * 1e3;
+  if (Date.now() > expiryTime) {
+    return null;
   }
   session.lastActiveAt = (/* @__PURE__ */ new Date()).toISOString();
   session.lastActiveAtIST = formatIST(/* @__PURE__ */ new Date());
-  return true;
+  return session;
+}
+function verifyOwnerSession(req) {
+  return getValidatedSession(req) !== null;
 }
 async function parseJsonBody(req) {
   try {
@@ -2021,13 +2390,13 @@ function getClientMeta(req) {
   else if (userAgent.includes("Chrome/")) browser = "Google Chrome";
   else if (userAgent.includes("Firefox/")) browser = "Mozilla Firefox";
   else if (userAgent.includes("Safari/") && !userAgent.includes("Chrome")) browser = "Apple Safari";
-  let os2 = "Unknown OS";
-  if (userAgent.includes("Windows")) os2 = "Windows 11 / NT";
-  else if (userAgent.includes("Macintosh")) os2 = "macOS";
-  else if (userAgent.includes("Linux")) os2 = "Linux";
-  else if (userAgent.includes("Android")) os2 = "Android";
-  else if (userAgent.includes("iPhone") || userAgent.includes("iPad")) os2 = "iOS";
-  return { ipAddress, userAgent, browser, os: os2 };
+  let os3 = "Unknown OS";
+  if (userAgent.includes("Windows")) os3 = "Windows 11 / NT";
+  else if (userAgent.includes("Macintosh")) os3 = "macOS";
+  else if (userAgent.includes("Linux")) os3 = "Linux";
+  else if (userAgent.includes("Android")) os3 = "Android";
+  else if (userAgent.includes("iPhone") || userAgent.includes("iPad")) os3 = "iOS";
+  return { ipAddress, userAgent, browser, os: os3 };
 }
 var loginRateLimiter = /* @__PURE__ */ new Map();
 var MAX_LOGIN_ATTEMPTS = 5;
@@ -2140,6 +2509,36 @@ async function handleApiRequest(req, res) {
     });
     return true;
   }
+  if (pathname === "/api/auth/session" && method === "GET") {
+    const session = getValidatedSession(req);
+    if (!session) {
+      sendJson(res, 200, { authenticated: false });
+      return true;
+    }
+    sendJson(res, 200, {
+      authenticated: true,
+      sessionId: session.id,
+      profile: stateManager.getOwnerProfile()
+    });
+    return true;
+  }
+  if (pathname === "/api/auth/logout" && method === "POST") {
+    const session = getValidatedSession(req);
+    if (session) {
+      stateManager.revokeSession(session.id);
+      stateManager.addAuditLog({
+        action: "ADMIN_LOGOUT",
+        category: "AUTH",
+        status: "SUCCESS",
+        actor: stateManager.getState().owner.loginEmail,
+        ipAddress: meta.ipAddress,
+        details: `Owner terminated session ${session.id}`
+      });
+    }
+    clearSessionCookie(res);
+    sendJson(res, 200, { success: true, message: "Session terminated successfully." });
+    return true;
+  }
   if (pathname === "/api/auth/login" && method === "POST") {
     const meta2 = getClientMeta(req);
     const body = await parseJsonBody(req);
@@ -2197,7 +2596,7 @@ async function handleApiRequest(req, res) {
         requireMfa: true,
         challengeToken,
         allowedFactors: ["TOTP", "WEBAUTHN", "RECOVERY_CODE"],
-        hasPasskeys: state.owner.passkeys.length > 0,
+        hasPasskeys: stateManager.getEnrolledPasskeys().length > 0,
         message: "Primary authentication passed. Secondary MFA challenge mandatory."
       });
     } else {
@@ -2254,7 +2653,7 @@ async function handleApiRequest(req, res) {
       requireMfa: true,
       challengeToken,
       allowedFactors: ["TOTP", "WEBAUTHN", "RECOVERY_CODE"],
-      hasPasskeys: state.owner.passkeys.length > 0,
+      hasPasskeys: stateManager.getEnrolledPasskeys().length > 0,
       message: "Auth0 identity verified. Secondary MFA challenge mandatory."
     });
     return true;
@@ -2285,24 +2684,14 @@ async function handleApiRequest(req, res) {
         matchedAuth.lastVerifiedAt = formatIST(/* @__PURE__ */ new Date());
       }
       stateManager.pendingLoginChallenges.delete(challengeToken);
-      const sessionToken = `sess_tok_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
-      const now = /* @__PURE__ */ new Date();
-      const newSession = {
-        id: `sess-${Date.now()}`,
-        sessionTokenHash: sha256(sessionToken),
+      const { sessionToken } = stateManager.createSession({
         userId: state.owner.id,
         ipAddress: meta.ipAddress,
         userAgent: meta.userAgent,
         browser: meta.browser,
-        os: meta.os,
-        createdAt: now.toISOString(),
-        createdAtIST: formatIST(now),
-        lastActiveAt: now.toISOString(),
-        lastActiveAtIST: formatIST(now),
-        isCurrent: true
-      };
-      state.sessions.unshift(newSession);
-      stateManager.save();
+        os: meta.os
+      });
+      setSessionCookie(res, sessionToken);
       stateManager.addAuditLog({
         action: "ADMIN_LOGIN_SUCCESS",
         category: "AUTH",
@@ -2329,7 +2718,7 @@ async function handleApiRequest(req, res) {
           browser: meta.browser,
           os: meta.os,
           actor: state.owner.loginEmail,
-          timestampIST: formatIST(now)
+          timestampIST: formatIST(/* @__PURE__ */ new Date())
         }
       });
       sendJson(res, 200, {
@@ -2371,24 +2760,14 @@ async function handleApiRequest(req, res) {
       matched.used = true;
       matched.usedAt = (/* @__PURE__ */ new Date()).toISOString();
       stateManager.pendingLoginChallenges.delete(challengeToken);
-      const sessionToken = `sess_tok_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
-      const now = /* @__PURE__ */ new Date();
-      const newSession = {
-        id: `sess-${Date.now()}`,
-        sessionTokenHash: sha256(sessionToken),
+      const { sessionToken } = stateManager.createSession({
         userId: state.owner.id,
         ipAddress: meta.ipAddress,
         userAgent: meta.userAgent,
         browser: meta.browser,
-        os: meta.os,
-        createdAt: now.toISOString(),
-        createdAtIST: formatIST(now),
-        lastActiveAt: now.toISOString(),
-        lastActiveAtIST: formatIST(now),
-        isCurrent: true
-      };
-      state.sessions.unshift(newSession);
-      stateManager.save();
+        os: meta.os
+      });
+      setSessionCookie(res, sessionToken);
       stateManager.addAuditLog({
         action: "EMERGENCY_RECOVERY_CODE_CONSUMED",
         category: "SECURITY",
@@ -2415,7 +2794,7 @@ async function handleApiRequest(req, res) {
           browser: meta.browser,
           os: meta.os,
           actor: state.owner.loginEmail,
-          timestampIST: formatIST(now)
+          timestampIST: formatIST(/* @__PURE__ */ new Date())
         }
       }, true);
       sendJson(res, 200, {
@@ -2490,19 +2869,21 @@ async function handleApiRequest(req, res) {
     const body = await parseJsonBody(req);
     const { rpID } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
+    const activePasskeys = stateManager.getEnrolledPasskeys();
     const options = await generateAuthenticationOptions({
       rpID,
-      allowCredentials: state.owner.passkeys.map((p) => ({
+      allowCredentials: activePasskeys.length > 0 ? activePasskeys.map((p) => ({
         id: p.id,
         transports: p.transports
-      })),
+      })) : void 0,
       userVerification: "preferred"
     });
-    stateManager.currentWebAuthnChallenge = options.challenge;
+    stateManager.saveWebAuthnChallenge(options.challenge, "authentication", state.owner.id);
     sendJson(res, 200, options);
     return true;
   }
   if (pathname === "/api/auth/passkey/verify-login" && method === "POST") {
+    const meta2 = getClientMeta(req);
     const body = await parseJsonBody(req);
     const { challengeToken, response: authResp } = body;
     const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
@@ -2512,9 +2893,9 @@ async function handleApiRequest(req, res) {
       sendJson(res, 400, { error: "No active WebAuthn login challenge found." });
       return true;
     }
-    const passkey = state.owner.passkeys.find((p) => p.id === authResp.id);
+    const passkey = stateManager.getEnrolledPasskeys().find((p) => p.id === authResp.id);
     if (!passkey) {
-      sendJson(res, 400, { error: "Unknown passkey credential ID." });
+      sendJson(res, 400, { error: "Unknown or unverified passkey credential. Please use an enrolled passkey." });
       return true;
     }
     try {
@@ -2528,38 +2909,29 @@ async function handleApiRequest(req, res) {
           publicKey: Buffer.from(passkey.publicKey, "base64url"),
           counter: passkey.counter,
           transports: passkey.transports
-        }
+        },
+        requireUserVerification: false
       });
       if (verification.verified) {
-        passkey.counter = verification.authenticationInfo.newCounter;
-        passkey.lastUsedAt = (/* @__PURE__ */ new Date()).toISOString();
-        stateManager.currentWebAuthnChallenge = null;
+        stateManager.touchPasskey(passkey.id, verification.authenticationInfo.newCounter);
+        stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, "authentication");
         if (challengeToken) {
           stateManager.pendingLoginChallenges.delete(challengeToken);
         }
-        const sessionToken = `sess_tok_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
-        const now = /* @__PURE__ */ new Date();
-        state.sessions.unshift({
-          id: `sess-${Date.now()}`,
-          sessionTokenHash: sha256(sessionToken),
+        const { sessionToken } = stateManager.createSession({
           userId: state.owner.id,
-          ipAddress: meta.ipAddress,
-          userAgent: meta.userAgent,
-          browser: meta.browser,
-          os: meta.os,
-          createdAt: now.toISOString(),
-          createdAtIST: formatIST(now),
-          lastActiveAt: now.toISOString(),
-          lastActiveAtIST: formatIST(now),
-          isCurrent: true
+          ipAddress: meta2.ipAddress,
+          userAgent: meta2.userAgent,
+          browser: meta2.browser,
+          os: meta2.os
         });
-        stateManager.save();
+        setSessionCookie(res, sessionToken);
         stateManager.addAuditLog({
           action: "PASSKEY_AUTHENTICATION_SUCCESS",
           category: "PASSKEY",
           status: "SUCCESS",
           actor: state.owner.loginEmail,
-          ipAddress: meta.ipAddress,
+          ipAddress: meta2.ipAddress,
           details: `Authenticated via Passkey: ${passkey.deviceLabel}`
         });
         sendJson(res, 200, {
@@ -3121,9 +3493,14 @@ async function handleApiRequest(req, res) {
     return true;
   }
   if (pathname === "/api/mfa/passkey/register-options" && method === "POST") {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: "Unauthorized: Owner session token required or expired." });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { rpID } = getWebAuthnConfig(req, body);
     const state = stateManager.getState();
+    const activePasskeys = stateManager.getEnrolledPasskeys();
     const options = await generateRegistrationOptions({
       rpName: "Chethan Kumar Portfolio Security",
       rpID,
@@ -3131,7 +3508,7 @@ async function handleApiRequest(req, res) {
       userName: state.owner.loginEmail,
       userDisplayName: state.owner.displayName,
       attestationType: "none",
-      excludeCredentials: state.owner.passkeys.map((p) => ({
+      excludeCredentials: activePasskeys.map((p) => ({
         id: p.id,
         transports: p.transports
       })),
@@ -3140,11 +3517,15 @@ async function handleApiRequest(req, res) {
         userVerification: "preferred"
       }
     });
-    stateManager.currentWebAuthnChallenge = options.challenge;
+    stateManager.saveWebAuthnChallenge(options.challenge, "registration", state.owner.id);
     sendJson(res, 200, options);
     return true;
   }
   if (pathname === "/api/mfa/passkey/register-verify" && method === "POST") {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: "Unauthorized: Owner session token required or expired." });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { deviceLabel, response: regResp } = body;
     const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
@@ -3159,10 +3540,11 @@ async function handleApiRequest(req, res) {
         response: regResp,
         expectedChallenge,
         expectedOrigin,
-        expectedRPID
+        expectedRPID,
+        requireUserVerification: false
       });
       if (verification.verified && verification.registrationInfo) {
-        const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
+        const { credential, credentialDeviceType, credentialBackedUp, aaguid } = verification.registrationInfo;
         const now = /* @__PURE__ */ new Date();
         const passkeyEntry = {
           id: credential.id,
@@ -3171,13 +3553,17 @@ async function handleApiRequest(req, res) {
           deviceType: credentialDeviceType,
           backedUp: credentialBackedUp,
           transports: credential.transports,
+          aaguid,
           deviceLabel: (deviceLabel || "Hardware Passkey / Security Key").trim(),
+          nickname: (deviceLabel || "Hardware Passkey / Security Key").trim(),
           createdAt: now.toISOString(),
-          lastUsedAt: null
+          createdAtIST: formatIST(now),
+          lastUsedAt: null,
+          lastUsedAtIST: null,
+          revoked: false
         };
-        state.owner.passkeys.push(passkeyEntry);
-        stateManager.currentWebAuthnChallenge = null;
-        stateManager.save();
+        const result = stateManager.addPasskey(passkeyEntry);
+        stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, "registration");
         stateManager.addAuditLog({
           action: "PASSKEY_ENROLLED",
           category: "PASSKEY",
@@ -3202,8 +3588,8 @@ async function handleApiRequest(req, res) {
         });
         sendJson(res, 200, {
           success: true,
-          passkeys: state.owner.passkeys,
-          message: "Passkey successfully enrolled and active."
+          passkeys: stateManager.getEnrolledPasskeys(),
+          message: result.duplicate ? "Passkey was already registered and has been updated." : "Passkey successfully enrolled and active."
         });
         return true;
       }
@@ -3213,30 +3599,58 @@ async function handleApiRequest(req, res) {
       return true;
     }
   }
-  if (pathname.startsWith("/api/mfa/passkey/") && method === "DELETE") {
-    const id = pathname.replace("/api/mfa/passkey/", "");
-    const state = stateManager.getState();
-    const check = stateManager.canRemoveFactor("PASSKEY", id);
-    if (!check.allowed) {
-      sendJson(res, 400, { error: check.reason });
+  if (pathname.startsWith("/api/mfa/passkey/") && method === "PATCH") {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: "Unauthorized: Owner session token required or expired." });
       return true;
     }
-    const beforeCount = state.owner.passkeys.length;
-    state.owner.passkeys = state.owner.passkeys.filter((p) => p.id !== id);
-    if (state.owner.passkeys.length < beforeCount) {
-      stateManager.save();
-      stateManager.addAuditLog({
-        action: "PASSKEY_REVOKED",
-        category: "PASSKEY",
-        status: "WARNING",
-        actor: state.owner.displayName,
-        ipAddress: meta.ipAddress,
-        details: `Revoked passkey ID prefix ${id.substring(0, 8)}\u2022\u2022\u2022\u2022`
-      });
-      sendJson(res, 200, { success: true, message: "Passkey revoked successfully." });
-    } else {
-      sendJson(res, 404, { error: "Passkey not found." });
+    const id = pathname.replace("/api/mfa/passkey/", "");
+    const body = await parseJsonBody(req);
+    const newLabel = (body.deviceLabel || body.label || body.nickname || "").trim();
+    if (!newLabel) {
+      sendJson(res, 400, { error: "Passkey nickname/label cannot be empty." });
+      return true;
     }
+    const renamed = stateManager.renamePasskey(id, newLabel);
+    if (renamed) {
+      stateManager.addAuditLog({
+        action: "PASSKEY_RENAMED",
+        category: "PASSKEY",
+        status: "SUCCESS",
+        actor: stateManager.getState().owner.loginEmail,
+        ipAddress: meta.ipAddress,
+        details: `Renamed passkey credential to: "${newLabel}"`
+      });
+      sendJson(res, 200, {
+        success: true,
+        message: "Passkey nickname updated successfully.",
+        passkeys: stateManager.getEnrolledPasskeys()
+      });
+    } else {
+      sendJson(res, 404, { error: "Passkey credential not found." });
+    }
+    return true;
+  }
+  if (pathname.startsWith("/api/mfa/passkey/") && method === "DELETE") {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: "Unauthorized: Owner session token required or expired." });
+      return true;
+    }
+    const id = pathname.replace("/api/mfa/passkey/", "");
+    const result = stateManager.revokePasskey(id);
+    if (!result.success) {
+      sendJson(res, 400, { error: result.message });
+      return true;
+    }
+    stateManager.addAuditLog({
+      action: "PASSKEY_REVOKED",
+      category: "PASSKEY",
+      status: "WARNING",
+      actor: stateManager.getState().owner.loginEmail,
+      ipAddress: meta.ipAddress,
+      details: `Revoked passkey ID prefix ${id.substring(0, 8)}\u2022\u2022\u2022\u2022`
+    });
+    sendJson(res, 200, { success: true, message: "Passkey revoked successfully.", passkeys: stateManager.getEnrolledPasskeys() });
     return true;
   }
   if (pathname === "/api/mfa/recovery-codes/generate" && method === "POST") {
@@ -3552,51 +3966,59 @@ async function handleApiRequest(req, res) {
     return true;
   }
   if (pathname === "/api/sessions" && method === "GET") {
-    if (!verifyOwnerSession(req)) {
+    const session = getValidatedSession(req);
+    if (!session) {
       sendJson(res, 401, { error: "Unauthorized: Owner session token required or expired." });
       return true;
     }
+    stateManager.cleanExpiredSessions();
     const state = stateManager.getState();
-    sendJson(res, 200, { sessions: state.sessions });
+    const sessionsList = (state.sessions || []).filter((s) => !s.revoked).map((s) => ({
+      ...s,
+      isCurrent: s.id === session.id
+    }));
+    sendJson(res, 200, { sessions: sessionsList });
     return true;
   }
   if (pathname.startsWith("/api/sessions/") && method === "DELETE") {
-    if (!verifyOwnerSession(req)) {
+    const session = getValidatedSession(req);
+    if (!session) {
       sendJson(res, 401, { error: "Unauthorized: Owner session token required or expired." });
       return true;
     }
     const id = pathname.replace("/api/sessions/", "");
-    const state = stateManager.getState();
-    state.sessions = state.sessions.filter((s) => s.id !== id);
-    stateManager.save();
+    const isCurrentSession = id === session.id;
+    stateManager.revokeSession(id);
+    if (isCurrentSession) {
+      clearSessionCookie(res);
+    }
     stateManager.addAuditLog({
       action: "ADMIN_SESSION_REVOKED",
       category: "SESSIONS",
       status: "SUCCESS",
-      actor: state.owner.loginEmail,
+      actor: stateManager.getState().owner.loginEmail,
       ipAddress: meta.ipAddress,
-      details: `Revoked session ${id}`
+      details: isCurrentSession ? `Current workstation session revoked (${id})` : `Revoked active session ${id}`
     });
-    sendJson(res, 200, { success: true, message: "Session revoked." });
+    sendJson(res, 200, { success: true, message: "Session revoked.", isCurrentSession });
     return true;
   }
   if (pathname === "/api/sessions/revoke-others" && method === "POST") {
-    if (!verifyOwnerSession(req)) {
+    const session = getValidatedSession(req);
+    if (!session) {
       sendJson(res, 401, { error: "Unauthorized: Owner session token required or expired." });
       return true;
     }
-    const state = stateManager.getState();
-    state.sessions = state.sessions.filter((s) => s.isCurrent);
-    stateManager.save();
+    const count = stateManager.revokeOtherSessions(session.id);
     stateManager.addAuditLog({
       action: "ALL_OTHER_SESSIONS_REVOKED",
       category: "SESSIONS",
       status: "SUCCESS",
-      actor: state.owner.loginEmail,
+      actor: stateManager.getState().owner.loginEmail,
       ipAddress: meta.ipAddress,
-      details: "Owner terminated all other concurrent active sessions."
+      details: `Owner terminated all other concurrent active sessions (${count} session(s) signed out).`
     });
-    sendJson(res, 200, { success: true, message: "All other active sessions have been terminated." });
+    sendJson(res, 200, { success: true, message: "All other active sessions have been terminated.", revokedCount: count });
     return true;
   }
   if (pathname === "/api/audit-logs" && method === "GET") {
@@ -3605,7 +4027,12 @@ async function handleApiRequest(req, res) {
       return true;
     }
     const state = stateManager.getState();
-    sendJson(res, 200, { logs: state.auditLogs });
+    const sanitizedLogs = (state.auditLogs || []).map((log) => ({
+      ...log,
+      actor: log.actor && log.actor.includes("@") ? maskEmail(log.actor) : log.actor,
+      details: log.details && log.details.includes("@") ? log.details.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, (match) => maskEmail(match)) : log.details
+    }));
+    sendJson(res, 200, { logs: sanitizedLogs });
     return true;
   }
   if (pathname === "/api/recruiter-tokens" && method === "GET") {

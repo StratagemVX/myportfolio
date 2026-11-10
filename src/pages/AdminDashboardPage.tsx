@@ -22,6 +22,7 @@ type AdminView = 'CONSOLE' | 'SECURITY' | 'RECRUITER' | 'INTEGRATIONS';
 
 export default function AdminDashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isVerifyingSession, setIsVerifyingSession] = useState(true);
   const [profile, setProfile] = useState<OwnerSecurityProfile | null>(null);
   const [currentView, setCurrentView] = useState<AdminView>('SECURITY');
   
@@ -30,13 +31,25 @@ export default function AdminDashboardPage() {
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check initial profile
-    apiClient.getProfile()
+    // Server-validated session persistence check on page load/refresh
+    apiClient.checkSession()
       .then(res => {
-        setProfile(res.profile);
+        if (res.authenticated && res.profile) {
+          setProfile(res.profile);
+          setIsAuthenticated(true);
+        } else {
+          apiClient.getProfile()
+            .then(pRes => setProfile(pRes.profile))
+            .catch(() => {});
+        }
       })
       .catch(() => {
-        // Dev offline fallback
+        apiClient.getProfile()
+          .then(pRes => setProfile(pRes.profile))
+          .catch(() => {});
+      })
+      .finally(() => {
+        setIsVerifyingSession(false);
       });
   }, []);
 
@@ -59,6 +72,15 @@ export default function AdminDashboardPage() {
       setSyncFeedback(`Successfully synchronized: ${projectsData.repositoryCount} repositories validated.`);
     }, 1500);
   };
+
+  if (isVerifyingSession) {
+    return (
+      <div className="py-32 text-center font-mono text-xs text-[#A4A8AE] site-container">
+        <div className="w-6 h-6 border-2 border-[#A8B8A7]/20 border-t-[#A8B8A7] rounded-full animate-spin mx-auto mb-4" />
+        <p className="tracking-wider uppercase text-[11px] text-[#A8B8A7]">Verifying Owner Session...</p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -153,6 +175,7 @@ export default function AdminDashboardPage() {
           <AccountSecuritySection 
             initialProfile={profile} 
             onProfileUpdated={(updated) => setProfile(updated)} 
+            onSessionExpired={() => setIsAuthenticated(false)}
           />
         )}
 

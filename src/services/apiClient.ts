@@ -58,6 +58,7 @@ class SecurityApiClient {
     try {
       res = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -318,8 +319,23 @@ class SecurityApiClient {
     return res;
   }
 
+  async checkSession(): Promise<{ authenticated: boolean; sessionId?: string; profile?: OwnerSecurityProfile }> {
+    try {
+      const res = await this.request<{ authenticated: boolean; sessionId?: string; profile?: OwnerSecurityProfile }>('/api/auth/session');
+      return res;
+    } catch {
+      return { authenticated: false };
+    }
+  }
+
   async logout(): Promise<void> {
-    this.setSessionToken(null);
+    try {
+      await this.request('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore network errors on logout
+    } finally {
+      this.setSessionToken(null);
+    }
   }
 
   // Account Email Management
@@ -443,8 +459,15 @@ class SecurityApiClient {
     });
   }
 
-  async revokePasskey(id: string): Promise<{ success: boolean; message: string }> {
+  async revokePasskey(id: string): Promise<{ success: boolean; message: string; passkeys?: any[] }> {
     return this.request(`/api/mfa/passkey/${id}`, { method: 'DELETE' });
+  }
+
+  async renamePasskey(id: string, deviceLabel: string): Promise<{ success: boolean; message: string; passkeys?: any[] }> {
+    return this.request(`/api/mfa/passkey/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ deviceLabel })
+    });
   }
 
   // Emergency Recovery Codes
