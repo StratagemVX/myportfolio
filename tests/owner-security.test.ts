@@ -220,9 +220,10 @@ describe('Owner Account Security Centre & IAM Enterprise Test Suite', () => {
     expect(stateManager.verifyOwnerPassword('')).toBe(false);
     expect(stateManager.verifyOwnerPassword('   ')).toBe(false);
 
-    // Default master password must verify correctly via salted PBKDF2-SHA512
-    const valid = stateManager.verifyOwnerPassword('Karna@2026!Security');
-    expect(valid).toBe(true);
+    // The deployment/test environment provides the owner credential; no source-controlled default is accepted.
+    const validPassword = process.env.ADMIN_PASSWORD;
+    expect(validPassword).toBeTruthy();
+    expect(stateManager.verifyOwnerPassword(validPassword!)).toBe(true);
   });
 
   it('Scenario 17: MFA strictly rejects hardcoded bypasses (123456 and RECOVERY-2026)', () => {
