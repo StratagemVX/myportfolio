@@ -252,7 +252,10 @@ var SecurityStateManager = class {
     const initialRecovery = generateEmergencyRecoveryCodes(10);
     const initialTotpSecret = generateBase32Secret();
     const salt = generateSalt();
-    const defaultPassword = process.env.ADMIN_PASSWORD || "Karna@2026!Security";
+    const defaultPassword = process.env.ADMIN_PASSWORD;
+    if (!defaultPassword || defaultPassword.length < 16) {
+      throw new Error("ADMIN_PASSWORD must be configured with at least 16 characters before initializing owner state.");
+    }
     const passwordHash = hashPassword(defaultPassword, salt);
     return {
       owner: {
@@ -274,6 +277,7 @@ var SecurityStateManager = class {
         mfaEnforced: true,
         passwordHash,
         passwordSalt: salt,
+        credentialVersion: 2,
         totpSecret: initialTotpSecret,
         totpEnrolledAt: now.toISOString(),
         authenticators: [
@@ -409,11 +413,15 @@ var SecurityStateManager = class {
       if (fileToRead) {
         const raw = fs.readFileSync(fileToRead, "utf-8");
         const parsed = JSON.parse(raw);
-        if (parsed.owner && (!parsed.owner.passwordHash || !parsed.owner.passwordSalt)) {
+        if (parsed.owner && (!parsed.owner.passwordHash || !parsed.owner.passwordSalt || parsed.owner.credentialVersion !== 2)) {
           const salt = generateSalt();
-          const defaultPassword = process.env.ADMIN_PASSWORD || "Karna@2026!Security";
+          const defaultPassword = process.env.ADMIN_PASSWORD;
+          if (!defaultPassword || defaultPassword.length < 16) {
+            throw new Error("ADMIN_PASSWORD must be configured with at least 16 characters to migrate owner credentials.");
+          }
           parsed.owner.passwordSalt = salt;
           parsed.owner.passwordHash = hashPassword(defaultPassword, salt);
+          parsed.owner.credentialVersion = 2;
         }
         if (parsed.owner) {
           if (!parsed.owner.preferredDisplayName) {
@@ -494,9 +502,6 @@ var SecurityStateManager = class {
     }
     const o = this.state.owner;
     if (process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
-      return true;
-    }
-    if (password === "Karna@2026!Security" || password === "Karna2026!Security") {
       return true;
     }
     if (o.passwordHash && o.passwordSalt) {
