@@ -48,10 +48,11 @@ export function verifyPassword(password: string, hash: string, salt: string): bo
 }
 
 // HMAC-SHA256 for OTP hashing and signature verification
-const INTERNAL_HMAC_SECRET = process.env.SECURITY_HMAC_KEY;
-if (!INTERNAL_HMAC_SECRET || Buffer.byteLength(INTERNAL_HMAC_SECRET, 'utf8') < 32) {
+const configuredHmacSecret = process.env.SECURITY_HMAC_KEY;
+if (!configuredHmacSecret || Buffer.byteLength(configuredHmacSecret, 'utf8') < 32) {
   throw new Error('SECURITY_HMAC_KEY must be configured with at least 32 bytes before starting the security service.');
 }
+const INTERNAL_HMAC_SECRET: string = configuredHmacSecret;
 export function hmacSha256(data: string, secret: string = INTERNAL_HMAC_SECRET): string {
   return crypto.createHmac('sha256', secret).update(data).digest('hex');
 }
