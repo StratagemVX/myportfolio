@@ -75,7 +75,7 @@ Keep the portfolio features, route count, GitHub synchronization, authentication
 - `npm run test` — `vitest run`
 - `npm run preview` — `vite preview`
 
-These commands are declared in the package manifest; they have not been executed as part of this documentation update.
+These commands are declared in the package manifest. The security branch CI has successfully run dependency installation, type-check/build/static-page/API bundle generation, and the Vitest suite. Re-run CI after every subsequent change; a passing build does not prove production secret configuration or deployed authentication behavior.
 
 ### Contribution and security notes
 
