@@ -61,6 +61,7 @@ export interface InternalServerState {
     whatsappVerified: boolean;
     mfaEnforced: boolean;
     passwordHash?: string;
+    credentialVersion?: number;
     passwordSalt?: string;
     totpSecret: string | null;
     totpEnrolledAt: string | null;
@@ -148,8 +149,11 @@ class SecurityStateManager {
     const initialRecovery = generateEmergencyRecoveryCodes(10);
     const initialTotpSecret = generateBase32Secret();
     const salt = generateSalt();
-    // Default master password hash for fallback when Auth0 is not connected
-    const defaultPassword = process.env.ADMIN_PASSWORD || 'Karna@2026!Security';
+    // Never initialize an administrator account with a source-controlled credential.
+    const defaultPassword = process.env.ADMIN_PASSWORD;
+    if (!defaultPassword || defaultPassword.length < 16) {
+      throw new Error('ADMIN_PASSWORD must be configured with at least 16 characters before initializing owner state.');
+    }
     const passwordHash = hashPassword(defaultPassword, salt);
 
     return {
@@ -172,6 +176,7 @@ class SecurityStateManager {
         mfaEnforced: true,
         passwordHash,
         passwordSalt: salt,
+        credentialVersion: 2,
         totpSecret: initialTotpSecret,
         totpEnrolledAt: now.toISOString(),
         authenticators: [
@@ -311,11 +316,15 @@ class SecurityStateManager {
         const parsed = JSON.parse(raw);
         
         // Ensure owner password hash is initialized
-        if (parsed.owner && (!parsed.owner.passwordHash || !parsed.owner.passwordSalt)) {
+        if (parsed.owner && (!parsed.owner.passwordHash || !parsed.owner.passwordSalt || parsed.owner.credentialVersion !== 2)) {
           const salt = generateSalt();
-          const defaultPassword = process.env.ADMIN_PASSWORD || 'Karna@2026!Security';
+          const defaultPassword = process.env.ADMIN_PASSWORD;
+          if (!defaultPassword || defaultPassword.length < 16) {
+            throw new Error('ADMIN_PASSWORD must be configured with at least 16 characters to migrate owner credentials.');
+          }
           parsed.owner.passwordSalt = salt;
           parsed.owner.passwordHash = hashPassword(defaultPassword, salt);
+          parsed.owner.credentialVersion = 2;
         }
 
         // Ensure preferred display name and legal name exist
@@ -408,10 +417,6 @@ class SecurityStateManager {
     const o = this.state.owner;
     // Check against configured ADMIN_PASSWORD env if set
     if (process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
-      return true;
-    }
-    // Accept standard master password variants (with and without '@')
-    if (password === 'Karna@2026!Security' || password === 'Karna2026!Security') {
       return true;
     }
     // Check against salt & hash
