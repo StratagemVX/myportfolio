@@ -15,7 +15,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const originAllowed = !origin || process.env.NODE_ENV !== 'production' ||
     [...defaultAllowedOrigins, ...configuredOrigins].includes(origin);
 
-  if (origin && originAllowed) {
+  if (origin && !originAllowed) {
+    res.statusCode = 403;
+    res.end('Origin not allowed');
+    return;
+  }
+
+  if (origin) {
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
