@@ -1,44 +1,14 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { handleApiRequest } from '../server/apiHandler';
+import { handleCorsAndPreflight } from '../server/cors';
+import { assertSecuritySecrets } from '../server/cryptoUtils';
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  // Credentialed CORS is restricted to explicit production origins.
-  const origin = req.headers.origin;
-  const defaultAllowedOrigins = [
-    'https://chethan-kumar-portfolio.vercel.app',
-    'https://backend-api-production-c798.up.railway.app'
-  ];
-  const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const originAllowed = !origin || process.env.NODE_ENV !== 'production' ||
-    [...defaultAllowedOrigins, ...configuredOrigins].includes(origin);
-
-  if (origin && !originAllowed) {
-    res.statusCode = 403;
-    res.end('Origin not allowed');
+  if (handleCorsAndPreflight(req, res, process.env) === 'handled') {
     return;
   }
 
-  if (origin) {
-    res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-
-  if (req.method === 'OPTIONS') {
-    if (origin && !originAllowed) {
-      res.statusCode = 403;
-      res.end();
-      return;
-    }
-    res.statusCode = 204;
-    res.end();
-    return;
-  }
+  assertSecuritySecrets(process.env);
 
   // Normalize URL from Vercel rewrites or direct requests
   const host = req.headers.host || 'localhost:3000';

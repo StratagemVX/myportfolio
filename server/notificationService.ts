@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { formatIST, sha256 } from './cryptoUtils';
+import { formatIST, generateSecureTokenHex, sha256 } from './cryptoUtils';
 import { maskEmail, maskPhone } from './types';
 import type { 
   DeliveryStatus, 
@@ -125,7 +125,7 @@ class NotificationService {
     const timestampIST = r.timestampIST || r.attemptedAtIST || formatIST(new Date(timestamp));
 
     return {
-      id: r.id || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: r.id || `evt_${Date.now()}_${generateSecureTokenHex(4)}`,
       timestamp,
       timestampIST,
       channel: r.channel || 'EMAIL',

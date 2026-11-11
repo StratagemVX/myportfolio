@@ -4,6 +4,7 @@ import {
   sha256, 
   hmacSha256, 
   generateSecureOTP, 
+  generateSecureTokenHex,
   generateSecureRecruiterToken, 
   generateEmergencyRecoveryCodes, 
   generateBase32Secret, 
@@ -13,6 +14,8 @@ import {
   formatIST,
   verifySessionToken
 } from './cryptoUtils';
+import { getApprovedCorsOrigins, isCorsOriginAllowed, normalizeOrigin } from './cors';
+import { verifyAuth0IdToken } from './auth0';
 import { stateManager } from './state';
 import { notificationService } from './notificationService';
 import QRCode from 'qrcode';
@@ -403,8 +406,12 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
     return true;
   }
 
-  // 2. Owner Security Profile (Public Read / Authenticated Admin Update)
+  // 2. Owner Security Profile (Authenticated Admin Read & Update)
   if ((pathname === '/api/security/profile' || pathname === '/api/admin/profile') && method === 'GET') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const profile = stateManager.getOwnerProfile();
     sendJson(res, 200, { profile });
     return true;
@@ -557,7 +564,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
 
     if (isOwner && validPassphrase) {
       resetLoginRateLimit(meta.ipAddress);
-      const challengeToken = `chal_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      const challengeToken = `chal_${Date.now()}_${generateSecureTokenHex(24)}`;
       stateManager.pendingLoginChallenges.set(challengeToken, {
         userId: state.owner.id,
         expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
@@ -598,25 +605,37 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
     return true;
   }
 
-  // 3B. Auth0 Universal Login / Token Verification
+  // 3B. Auth0 Universal Login / Token Verification (Cryptographic JWT/JWKS verification)
   if (pathname === '/api/auth/auth0-verify' && method === 'POST') {
     const body = await parseJsonBody(req);
-    const { email, sub } = body;
+    const idToken = typeof body?.idToken === 'string' ? body.idToken.trim() : '';
     const state = stateManager.getState();
 
-    const emailClean = (email || '').trim().toLowerCase();
-    const isAuthorizedOwner = emailClean === state.owner.loginEmail.toLowerCase() ||
-                             emailClean === state.owner.recoveryEmail.toLowerCase() ||
-                             emailClean === 'the.suryaputraa@gmail.com' ||
-                             emailClean === 'karnashaiva81@gmail.com' ||
-                             (sub && sub.includes(state.owner.id));
+    const verified = await verifyAuth0IdToken(idToken);
+    if (!verified.ok) {
+      stateManager.addAuditLog({
+        action: 'AUTH0_TOKEN_VERIFICATION_FAILED',
+        category: 'AUTH',
+        status: 'FAILURE',
+        actor: 'Unverified Auth0 Caller',
+        ipAddress: meta.ipAddress,
+        details: verified.error
+      });
+      sendJson(res, verified.status, { error: verified.error });
+      return true;
+    }
+
+    const emailClean = verified.claims.email;
+    const isAuthorizedOwner =
+      emailClean === state.owner.loginEmail.toLowerCase() ||
+      emailClean === state.owner.recoveryEmail.toLowerCase();
 
     if (!isAuthorizedOwner) {
       stateManager.addAuditLog({
         action: 'AUTH0_UNAUTHORIZED_ACCOUNT_REJECTED',
         category: 'AUTH',
         status: 'FAILURE',
-        actor: email || sub || 'Unknown Auth0 User',
+        actor: emailClean,
         ipAddress: meta.ipAddress,
         details: 'Unauthorized Auth0 account attempted administrative access.'
       });
@@ -627,8 +646,8 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
       return true;
     }
 
-    // Owner verified via Auth0! Initiate mandatory secondary MFA challenge
-    const challengeToken = `chal_auth0_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    // Owner verified via cryptographic Auth0 token! Initiate mandatory secondary MFA challenge
+    const challengeToken = `chal_auth0_${Date.now()}_${generateSecureTokenHex(24)}`;
     stateManager.pendingLoginChallenges.set(challengeToken, {
       userId: state.owner.id,
       expiresAt: Date.now() + 5 * 60 * 1000,
@@ -641,7 +660,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
       status: 'SUCCESS',
       actor: emailClean,
       ipAddress: meta.ipAddress,
-      details: 'Auth0 identity verified. Enforcing mandatory second-factor challenge.'
+      details: 'Auth0 ID token cryptographically verified. Enforcing mandatory second-factor challenge.'
     });
 
     sendJson(res, 200, {
@@ -842,71 +861,100 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
     return true;
   }
 
-// Helper to extract reliable WebAuthn RP ID and expected origins dynamically
-function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
-  let hostname = '';
+type WebAuthnConfigResult =
+  | { ok: true; rpID: string; expectedRPID: string[]; expectedOrigin: string[] }
+  | { ok: false; error: string };
 
-  // 1. Try body origin if supplied
-  if (body?.origin && typeof body.origin === 'string') {
-    try {
-      hostname = new URL(body.origin).hostname;
-    } catch {}
+function parseWebAuthnClientData(responseObj: any): { challenge?: string; origin?: string; type?: string } | null {
+  const clientDataB64 = responseObj?.response?.clientDataJSON;
+  if (!clientDataB64 || typeof clientDataB64 !== 'string') return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(clientDataB64, 'base64url').toString('utf8'));
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
   }
+}
 
-  // 2. Try Origin header
-  if (!hostname && req.headers.origin && typeof req.headers.origin === 'string') {
-    try {
-      hostname = new URL(req.headers.origin).hostname;
-    } catch {}
-  }
+// Derive WebAuthn RP ID and expected origins strictly from server allowlists (never trust caller origins)
+function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>): WebAuthnConfigResult {
+  const approvedOrigins = getApprovedCorsOrigins(process.env);
+  const configuredRpIds = (process.env.WEBAUTHN_RP_ID || '')
+    .split(',')
+    .map((value) => value.trim().toLowerCase().replace(/:\d+$/, ''))
+    .filter(Boolean);
 
-  // 3. Try Referer header
-  if (!hostname && req.headers.referer && typeof req.headers.referer === 'string') {
-    try {
-      hostname = new URL(req.headers.referer).hostname;
-    } catch {}
-  }
+  const originHostnames = approvedOrigins
+    .map((origin) => {
+      try {
+        return new URL(origin).hostname.toLowerCase();
+      } catch {
+        return '';
+      }
+    })
+    .filter(Boolean);
 
-  // 4. Try Host headers
-  if (!hostname) {
-    const rawHost = (req.headers['x-forwarded-host'] as string) || req.headers.host || '';
-    if (rawHost) {
-      hostname = rawHost.split(':')[0].trim();
+  const expectedRPID = Array.from(new Set([
+    ...originHostnames,
+    ...configuredRpIds,
+    'chethankumar.dev',
+    'www.chethankumar.dev',
+    'chethan-kumar-portfolio.vercel.app',
+    ...(process.env.NODE_ENV !== 'production' ? ['localhost'] : [])
+  ]));
+
+  const bodyOriginRaw = body?.origin;
+  if (bodyOriginRaw !== undefined && bodyOriginRaw !== null && bodyOriginRaw !== '') {
+    if (typeof bodyOriginRaw !== 'string' || !isCorsOriginAllowed(bodyOriginRaw, process.env)) {
+      return { ok: false, error: 'Origin not allowed for WebAuthn authentication.' };
     }
   }
 
-  // Sanitize hostname: lowercase and strip any ports
-  hostname = hostname.replace(/:\d+$/, '').trim().toLowerCase();
+  const headerOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : undefined;
+  if (headerOrigin && !isCorsOriginAllowed(headerOrigin, process.env)) {
+    return { ok: false, error: 'Origin not allowed for WebAuthn authentication.' };
+  }
 
-  const rpID = hostname || 'localhost';
+  const validatedOrigin =
+    (typeof bodyOriginRaw === 'string' ? normalizeOrigin(bodyOriginRaw) : null) ||
+    normalizeOrigin(headerOrigin) ||
+    (typeof req.headers.referer === 'string' && isCorsOriginAllowed(req.headers.referer, process.env)
+      ? normalizeOrigin(req.headers.referer)
+      : null);
 
-  const expectedRPID = Array.from(new Set([
-    rpID,
-    'localhost',
-    'chethan-kumar-portfolio.vercel.app',
-    'chethankumar.dev'
-  ]));
+  let rpID = '';
+  if (validatedOrigin) {
+    try {
+      rpID = new URL(validatedOrigin).hostname.toLowerCase();
+    } catch {
+      rpID = '';
+    }
+  }
 
-  const expectedOrigin = Array.from(new Set([
-    `https://${rpID}`,
-    `http://${rpID}`,
-    `http://${rpID}:3000`,
-    `http://${rpID}:5173`,
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'https://chethan-kumar-portfolio.vercel.app',
-    'https://chethankumar.dev',
-    ...(req.headers.origin ? [req.headers.origin as string] : []),
-    ...(body?.origin ? [body.origin as string] : [])
-  ]));
+  if (!rpID) {
+    const rawHost = (req.headers['x-forwarded-host'] as string) || req.headers.host || '';
+    const candidateHost = rawHost.split(':')[0].trim().toLowerCase();
+    if (candidateHost && expectedRPID.includes(candidateHost)) {
+      rpID = candidateHost;
+    }
+  }
 
-  return { rpID, expectedRPID, expectedOrigin };
+  if (!rpID) {
+    rpID = process.env.NODE_ENV === 'production' ? 'chethan-kumar-portfolio.vercel.app' : 'localhost';
+  }
+
+  return { ok: true, rpID, expectedRPID, expectedOrigin: approvedOrigins };
 }
 
   // 6. Passkey WebAuthn Login Options & Verification
   if (pathname === '/api/auth/passkey/login-options' && method === 'POST') {
     const body = await parseJsonBody(req);
-    const { rpID } = getWebAuthnConfig(req, body);
+    const config = getWebAuthnConfig(req, body);
+    if (!config.ok) {
+      sendJson(res, 403, { error: config.error });
+      return true;
+    }
+    const { rpID, expectedOrigin } = config;
     const state = stateManager.getState();
     const activePasskeys = stateManager.getEnrolledPasskeys();
 
@@ -919,7 +967,7 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
       userVerification: 'preferred'
     });
 
-    stateManager.saveWebAuthnChallenge(options.challenge, 'authentication', state.owner.id);
+    stateManager.saveWebAuthnChallenge(options.challenge, 'authentication', state.owner.id, rpID, expectedOrigin);
     sendJson(res, 200, options);
     return true;
   }
@@ -928,17 +976,30 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     const meta = getClientMeta(req);
     const body = await parseJsonBody(req);
     const { challengeToken, response: authResp } = body;
-    const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
+    const config = getWebAuthnConfig(req, body);
+    if (!config.ok) {
+      sendJson(res, 403, { error: config.error });
+      return true;
+    }
     const state = stateManager.getState();
 
-    const expectedChallenge = stateManager.currentWebAuthnChallenge;
-    if (!expectedChallenge || !stateManager.isWebAuthnChallengeValid(expectedChallenge, 'authentication', state.owner.id)) {
+    const clientData = parseWebAuthnClientData(authResp);
+    const candidateChallenge = clientData?.challenge || stateManager.currentWebAuthnChallenge || '';
+    if (!candidateChallenge || !stateManager.isWebAuthnChallengeValid(candidateChallenge, 'authentication', state.owner.id)) {
       sendJson(res, 400, { error: 'No active, valid WebAuthn login challenge found.' });
       return true;
     }
 
-    const passkey = stateManager.getEnrolledPasskeys().find(p => p.id === authResp.id);
+    const challengeEntry = stateManager.getWebAuthnChallengeEntry(candidateChallenge);
+    if (clientData?.origin && !isCorsOriginAllowed(clientData.origin, process.env)) {
+      stateManager.consumeWebAuthnChallenge(candidateChallenge);
+      sendJson(res, 403, { error: 'Origin not allowed for WebAuthn verification.' });
+      return true;
+    }
+
+    const passkey = stateManager.getEnrolledPasskeys().find(p => p.id === authResp?.id);
     if (!passkey) {
+      stateManager.consumeWebAuthnChallenge(candidateChallenge);
       sendJson(res, 400, { error: 'Unknown or unverified passkey credential. Please use an enrolled passkey.' });
       return true;
     }
@@ -946,9 +1007,9 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     try {
       const verification = await verifyAuthenticationResponse({
         response: authResp as AuthenticationResponseJSON,
-        expectedChallenge,
-        expectedOrigin,
-        expectedRPID,
+        expectedChallenge: candidateChallenge,
+        expectedOrigin: challengeEntry?.expectedOrigins || config.expectedOrigin,
+        expectedRPID: challengeEntry?.rpID ? [challengeEntry.rpID] : config.expectedRPID,
         credential: {
           id: passkey.id,
           publicKey: Buffer.from(passkey.publicKey, 'base64url'),
@@ -958,43 +1019,44 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
         requireUserVerification: false
       });
 
-      if (verification.verified) {
-        if (!stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, 'authentication', state.owner.id)) {
-          sendJson(res, 400, { error: 'WebAuthn login challenge expired or already used.' });
-          return true;
-        }
-        stateManager.touchPasskey(passkey.id, verification.authenticationInfo.newCounter);
-        if (challengeToken) {
-          stateManager.pendingLoginChallenges.delete(challengeToken);
-        }
-
-        const { sessionToken } = stateManager.createSession({
-          userId: state.owner.id,
-          ipAddress: meta.ipAddress,
-          userAgent: meta.userAgent,
-          browser: meta.browser,
-          os: meta.os
-        });
-        setSessionCookie(res, sessionToken);
-
-        stateManager.addAuditLog({
-          action: 'PASSKEY_AUTHENTICATION_SUCCESS',
-          category: 'PASSKEY',
-          status: 'SUCCESS',
-          actor: state.owner.loginEmail,
-          ipAddress: meta.ipAddress,
-          details: `Authenticated via Passkey: ${passkey.deviceLabel}`
-        });
-
-        sendJson(res, 200, {
-          authenticated: true,
-          sessionToken,
-          profile: stateManager.getOwnerProfile(),
-          message: 'Authenticated successfully via hardware passkey.'
-        });
+      if (!verification.verified || !stateManager.verifyAndConsumeWebAuthnChallenge(candidateChallenge, 'authentication', state.owner.id)) {
+        stateManager.consumeWebAuthnChallenge(candidateChallenge);
+        sendJson(res, 401, { error: 'Passkey verification failed or challenge already used.' });
         return true;
       }
+
+      stateManager.touchPasskey(passkey.id, verification.authenticationInfo.newCounter);
+      if (challengeToken) {
+        stateManager.pendingLoginChallenges.delete(challengeToken);
+      }
+
+      const { sessionToken } = stateManager.createSession({
+        userId: state.owner.id,
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+        browser: meta.browser,
+        os: meta.os
+      });
+      setSessionCookie(res, sessionToken);
+
+      stateManager.addAuditLog({
+        action: 'PASSKEY_AUTHENTICATION_SUCCESS',
+        category: 'PASSKEY',
+        status: 'SUCCESS',
+        actor: state.owner.loginEmail,
+        ipAddress: meta.ipAddress,
+        details: `Authenticated via Passkey: ${passkey.deviceLabel}`
+      });
+
+      sendJson(res, 200, {
+        authenticated: true,
+        sessionToken,
+        profile: stateManager.getOwnerProfile(),
+        message: 'Authenticated successfully via hardware passkey.'
+      });
+      return true;
     } catch (err: unknown) {
+      stateManager.consumeWebAuthnChallenge(candidateChallenge);
       const errorMsg = err instanceof Error ? err.message : String(err);
       sendJson(res, 400, { error: `Passkey verification failed: ${errorMsg}` });
       return true;
@@ -1078,6 +1140,13 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
       return true;
     }
 
+    if (newPassword !== undefined && newPassword !== null && newPassword !== '') {
+      if (typeof newPassword !== 'string' || newPassword.trim().length < 16) {
+        sendJson(res, 400, { error: 'New administrator password must be at least 16 characters long.' });
+        return true;
+      }
+    }
+
     const inputHash = hmacSha256(otpCode.trim());
     if (!safeCompare(pending.codeHash, inputHash)) {
       sendJson(res, 401, { error: `Invalid confirmation code. ${3 - pending.attempts} attempts remaining.` });
@@ -1087,7 +1156,7 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     // Success: Consume OTP immediately
     stateManager.pendingEmailOTP = null;
 
-    if (newPassword && typeof newPassword === 'string' && newPassword.length >= 8) {
+    if (typeof newPassword === 'string' && newPassword.trim().length >= 16) {
       stateManager.setOwnerPassword(newPassword);
     }
 
@@ -1482,6 +1551,10 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
   // 10. Authenticator App MFA: Initialize Enrollment (Generate QR Code)
   if (pathname === '/api/mfa/totp/enroll-init' && method === 'POST') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const appType: AuthenticatorAppType = body.appType === 'MICROSOFT_AUTHENTICATOR' ? 'MICROSOFT_AUTHENTICATOR' : 'GOOGLE_AUTHENTICATOR';
     const appLabel = appType === 'MICROSOFT_AUTHENTICATOR' ? 'Microsoft Authenticator' : 'Google Authenticator';
@@ -1510,6 +1583,10 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
   // 11. Authenticator App MFA: Confirm Enrollment
   if (pathname === '/api/mfa/totp/enroll-confirm' && method === 'POST') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { secret, code } = body;
     const appType: AuthenticatorAppType = body.appType === 'MICROSOFT_AUTHENTICATOR' ? 'MICROSOFT_AUTHENTICATOR' : 'GOOGLE_AUTHENTICATOR';
@@ -1582,6 +1659,10 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
   // 12. Authenticator App MFA: Remove Factor
   if (pathname === '/api/mfa/totp/remove' && method === 'POST') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { authenticatorId } = body;
     const state = stateManager.getState();
@@ -1646,7 +1727,12 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
       return true;
     }
     const body = await parseJsonBody(req);
-    const { rpID } = getWebAuthnConfig(req, body);
+    const config = getWebAuthnConfig(req, body);
+    if (!config.ok) {
+      sendJson(res, 403, { error: config.error });
+      return true;
+    }
+    const { rpID, expectedOrigin } = config;
     const state = stateManager.getState();
     const activePasskeys = stateManager.getEnrolledPasskeys();
 
@@ -1667,7 +1753,7 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
       }
     });
 
-    stateManager.saveWebAuthnChallenge(options.challenge, 'registration', state.owner.id);
+    stateManager.saveWebAuthnChallenge(options.challenge, 'registration', state.owner.id, rpID, expectedOrigin);
     sendJson(res, 200, options);
     return true;
   }
@@ -1679,83 +1765,96 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
     }
     const body = await parseJsonBody(req);
     const { deviceLabel, response: regResp } = body;
-    const { expectedRPID, expectedOrigin } = getWebAuthnConfig(req, body);
+    const config = getWebAuthnConfig(req, body);
+    if (!config.ok) {
+      sendJson(res, 403, { error: config.error });
+      return true;
+    }
     const state = stateManager.getState();
 
-    const expectedChallenge = stateManager.currentWebAuthnChallenge;
-    if (!expectedChallenge || !stateManager.isWebAuthnChallengeValid(expectedChallenge, 'registration', state.owner.id)) {
+    const clientData = parseWebAuthnClientData(regResp);
+    const candidateChallenge = clientData?.challenge || stateManager.currentWebAuthnChallenge || '';
+    if (!candidateChallenge || !stateManager.isWebAuthnChallengeValid(candidateChallenge, 'registration', state.owner.id)) {
       sendJson(res, 400, { error: 'No active, valid WebAuthn registration challenge found.' });
+      return true;
+    }
+
+    const challengeEntry = stateManager.getWebAuthnChallengeEntry(candidateChallenge);
+    if (clientData?.origin && !isCorsOriginAllowed(clientData.origin, process.env)) {
+      stateManager.consumeWebAuthnChallenge(candidateChallenge);
+      sendJson(res, 403, { error: 'Origin not allowed for WebAuthn registration.' });
       return true;
     }
 
     try {
       const verification = await verifyRegistrationResponse({
         response: regResp as RegistrationResponseJSON,
-        expectedChallenge,
-        expectedOrigin,
-        expectedRPID,
+        expectedChallenge: candidateChallenge,
+        expectedOrigin: challengeEntry?.expectedOrigins || config.expectedOrigin,
+        expectedRPID: challengeEntry?.rpID ? [challengeEntry.rpID] : config.expectedRPID,
         requireUserVerification: false
       });
 
-      if (verification.verified && verification.registrationInfo) {
-        const { credential, credentialDeviceType, credentialBackedUp, aaguid } = verification.registrationInfo;
-        const now = new Date();
-
-        const passkeyEntry: EnrolledPasskey = {
-          id: credential.id,
-          publicKey: Buffer.from(credential.publicKey).toString('base64url'),
-          counter: credential.counter,
-          deviceType: credentialDeviceType,
-          backedUp: credentialBackedUp,
-          transports: credential.transports as any,
-          aaguid,
-          deviceLabel: (deviceLabel || 'Hardware Passkey / Security Key').trim(),
-          nickname: (deviceLabel || 'Hardware Passkey / Security Key').trim(),
-          createdAt: now.toISOString(),
-          createdAtIST: formatIST(now),
-          lastUsedAt: null,
-          lastUsedAtIST: null,
-          revoked: false
-        };
-
-        if (!stateManager.verifyAndConsumeWebAuthnChallenge(expectedChallenge, 'registration', state.owner.id)) {
-          sendJson(res, 400, { error: 'WebAuthn registration challenge expired or already used.' });
-          return true;
-        }
-        const result = stateManager.addPasskey(passkeyEntry);
-
-        stateManager.addAuditLog({
-          action: 'PASSKEY_ENROLLED',
-          category: 'PASSKEY',
-          status: 'SUCCESS',
-          actor: state.owner.loginEmail,
-          ipAddress: meta.ipAddress,
-          details: `Passkey factor enrolled: ${passkeyEntry.deviceLabel}`
-        });
-
-        dispatchMultiChannelAlert({
-          eventType: 'PASSKEY_ENROLLED',
-          subject: 'Portfolio Admin — Passkey Security Factor Enrolled',
-          headline: 'New Biometric / Security Key Enrolled',
-          details: `A new passkey (${passkeyEntry.deviceLabel}) was successfully added to your account.`,
-          severity: 'INFO',
-          metadata: {
-            ipAddress: meta.ipAddress,
-            browser: meta.browser,
-            os: meta.os,
-            actor: state.owner.loginEmail,
-            timestampIST: formatIST(now)
-          }
-        });
-
-        sendJson(res, 200, {
-          success: true,
-          passkeys: stateManager.getEnrolledPasskeys(),
-          message: result.duplicate ? 'Passkey was already registered and has been updated.' : 'Passkey successfully enrolled and active.'
-        });
+      if (!verification.verified || !verification.registrationInfo || !stateManager.verifyAndConsumeWebAuthnChallenge(candidateChallenge, 'registration', state.owner.id)) {
+        stateManager.consumeWebAuthnChallenge(candidateChallenge);
+        sendJson(res, 400, { error: 'WebAuthn registration verification failed or challenge already used.' });
         return true;
       }
+
+      const { credential, credentialDeviceType, credentialBackedUp, aaguid } = verification.registrationInfo;
+      const now = new Date();
+
+      const passkeyEntry: EnrolledPasskey = {
+        id: credential.id,
+        publicKey: Buffer.from(credential.publicKey).toString('base64url'),
+        counter: credential.counter,
+        deviceType: credentialDeviceType,
+        backedUp: credentialBackedUp,
+        transports: credential.transports as any,
+        aaguid,
+        deviceLabel: (deviceLabel || 'Hardware Passkey / Security Key').trim(),
+        nickname: (deviceLabel || 'Hardware Passkey / Security Key').trim(),
+        createdAt: now.toISOString(),
+        createdAtIST: formatIST(now),
+        lastUsedAt: null,
+        lastUsedAtIST: null,
+        revoked: false
+      };
+
+      const result = stateManager.addPasskey(passkeyEntry);
+
+      stateManager.addAuditLog({
+        action: 'PASSKEY_ENROLLED',
+        category: 'PASSKEY',
+        status: 'SUCCESS',
+        actor: state.owner.loginEmail,
+        ipAddress: meta.ipAddress,
+        details: `Passkey factor enrolled: ${passkeyEntry.deviceLabel}`
+      });
+
+      dispatchMultiChannelAlert({
+        eventType: 'PASSKEY_ENROLLED',
+        subject: 'Portfolio Admin — Passkey Security Factor Enrolled',
+        headline: 'New Biometric / Security Key Enrolled',
+        details: `A new passkey (${passkeyEntry.deviceLabel}) was successfully added to your account.`,
+        severity: 'INFO',
+        metadata: {
+          ipAddress: meta.ipAddress,
+          browser: meta.browser,
+          os: meta.os,
+          actor: state.owner.loginEmail,
+          timestampIST: formatIST(now)
+        }
+      });
+
+      sendJson(res, 200, {
+        success: true,
+        passkeys: stateManager.getEnrolledPasskeys(),
+        message: result.duplicate ? 'Passkey was already registered and has been updated.' : 'Passkey successfully enrolled and active.'
+      });
+      return true;
     } catch (err: unknown) {
+      stateManager.consumeWebAuthnChallenge(candidateChallenge);
       const errorMsg = err instanceof Error ? err.message : String(err);
       sendJson(res, 400, { error: `Passkey registration failed: ${errorMsg}` });
       return true;
@@ -1826,6 +1925,10 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
   // 14. Emergency Recovery Codes: Regenerate
   if (pathname === '/api/mfa/recovery-codes/generate' && method === 'POST') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const state = stateManager.getState();
     const { plaintextCodes, hashedCodes } = generateEmergencyRecoveryCodes(10);
     const now = new Date();
@@ -1869,6 +1972,10 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
   // 15. Notification Preferences: GET & PATCH
   if (pathname === '/api/notifications/preferences' && method === 'GET') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const state = stateManager.getState();
     const history = notificationService.getHistory();
     const providerStatus = notificationService.getProviderStatus();
@@ -1889,6 +1996,10 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
   }
 
   if (pathname === '/api/notifications/preferences' && method === 'PATCH') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const state = stateManager.getState();
     if (body.preferences) {
@@ -1914,6 +2025,10 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
   }
 
   if (pathname === '/api/notifications/test' && method === 'POST') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { channel } = body;
     const now = new Date();
@@ -1969,6 +2084,10 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
   // 15b. Notification Poller & Diagnostics
   if (pathname === '/api/notifications/poll' && method === 'POST') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { channel, providerMessageId } = body;
     if (!channel || !providerMessageId) {
@@ -1986,6 +2105,10 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
   }
 
   if (pathname === '/api/notifications/diagnostics' && method === 'GET') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const diagnostics = notificationService.getComprehensiveDiagnostics();
     sendJson(res, 200, {
       diagnostics,
@@ -1996,6 +2119,10 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
   // 15c. Notification History
   if (pathname === '/api/notifications/history' && method === 'GET') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const history = notificationService.getHistory();
     sendJson(res, 200, {
       history,
@@ -2081,10 +2208,15 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
   if (pathname === '/api/webhooks/whatsapp') {
     if (method === 'GET') {
+      const expectedVerifyToken = (process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || '').trim();
+      if (!expectedVerifyToken) {
+        sendJson(res, 503, { error: 'WhatsApp webhook verification token is not configured.' });
+        return true;
+      }
       const mode = urlObj.searchParams.get('hub.mode');
-      const token = urlObj.searchParams.get('hub.verify_token');
+      const token = urlObj.searchParams.get('hub.verify_token') || '';
       const challenge = urlObj.searchParams.get('hub.challenge');
-      if (mode === 'subscribe' && token === (process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'portfolio-security-webhook')) {
+      if (mode === 'subscribe' && safeCompare(token, expectedVerifyToken)) {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'text/plain');
         res.end(challenge || '');
@@ -2114,14 +2246,19 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
 
   // 16. Phone Verification for SMS / WhatsApp Notifications
   if (pathname === '/api/notifications/phone/request-verify' && method === 'POST') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { channel } = body; // 'SMS' or 'WHATSAPP'
     const state = stateManager.getState();
     const rawOtp = generateSecureOTP(6);
+    const destination = channel === 'WHATSAPP' ? state.owner.whatsappMobile : state.owner.securityMobile;
 
     stateManager.pendingPhoneOTP = {
       codeHash: hmacSha256(rawOtp),
-      destination: channel === 'WHATSAPP' ? state.owner.whatsappMobile : state.owner.securityMobile,
+      destination,
       expiresAt: Date.now() + 10 * 60 * 1000,
       channel: channel || 'SMS'
     };
@@ -2137,15 +2274,20 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>) {
       );
     }
 
+    const maskedDestination = maskPhone(destination);
     sendJson(res, 200, {
       success: true,
-      destination: channel === 'WHATSAPP' ? state.owner.whatsappMobile : state.owner.securityMobile,
-      message: `Verification code sent to ${channel === 'WHATSAPP' ? state.owner.whatsappMobile : state.owner.securityMobile}`
+      destination: maskedDestination,
+      message: `Verification code sent to ${maskedDestination}`
     });
     return true;
   }
 
   if (pathname === '/api/notifications/phone/confirm-verify' && method === 'POST') {
+    if (!verifyOwnerSession(req)) {
+      sendJson(res, 401, { error: 'Unauthorized: Owner session token required or expired.' });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { code, channel } = body;
     const state = stateManager.getState();

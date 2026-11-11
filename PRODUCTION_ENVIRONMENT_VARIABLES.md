@@ -32,13 +32,17 @@ These variables are strictly private and reside only in Railway's encrypted envi
 | `NODE_ENV` | `production` | Enables production mode, strict CORS, and disables stack leakages |
 | `PORT` | *(injected by Railway)* | The port the Node.js server binds to (default: 3001) |
 | `FRONTEND_URL` | `https://chethan-kumar-portfolio.vercel.app` | Canonical frontend domain for redirect validation |
-| `CORS_ALLOWED_ORIGINS` | `https://chethan-kumar-portfolio.vercel.app,http://localhost:3000` | Strict origin whitelist for credentialed requests |
-| `SECURITY_HMAC_KEY` | *(cryptographic secret)* | Salt and signature key for session hashing and OTPs |
+| `CORS_ALLOWED_ORIGINS` | `https://chethan-kumar-portfolio.vercel.app,https://chethankumar.dev` | Strict origin whitelist for credentialed production requests (never include localhost) |
+| `SECURITY_HMAC_KEY` | *(cryptographic secret, min 32 bytes)* | Salt and signature key for session hashing and OTPs |
+| `ADMIN_PASSWORD` | *(strong passphrase, min 16 chars)* | Required administrator bootstrap/login credential (never hardcoded) |
+| `WEBAUTHN_RP_ID` | `chethan-kumar-portfolio.vercel.app` | Optional explicit WebAuthn Relying Party ID override for custom domains |
+| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | *(cryptographic secret)* | Verification token required for Meta WhatsApp webhook subscription handshake |
 
 ### Identity & Auth0 (Backend)
 | Variable | Value | Description |
 | :--- | :--- | :--- |
-| `AUTH0_DOMAIN` | `dev-xxxx.us.auth0.com` | Auth0 tenant domain for backend token verification |
+| `AUTH0_DOMAIN` | `dev-xxxx.us.auth0.com` | Auth0 tenant domain for backend JWT/JWKS verification |
+| `AUTH0_CLIENT_ID` | `your_auth0_spa_client_id` | Auth0 client ID expected in verified ID token `aud` claims |
 | `AUTH0_AUDIENCE` | `https://api.chethankumar.dev` | API identifier / audience for JWT claims |
 | `AUTH0_CLIENT_SECRET` | *(confidential)* | Machine-to-machine client secret for Management API |
 

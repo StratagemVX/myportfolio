@@ -2,10 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { 
-  formatIST, 
-  sha256, 
-  generateEmergencyRecoveryCodes, 
+import {
+  assertSecuritySecrets,
+  formatIST,
+  sha256,
+  safeCompare,
+  generateSecureTokenHex,
+  generateEmergencyRecoveryCodes,
   generateBase32Secret,
   generateSalt,
   hashPassword,
@@ -94,25 +97,158 @@ export interface InternalServerState {
   recruiterTokens: HashedRecruiterToken[];
 }
 
+const LEGACY_SEEDED_SESSION_IDS = new Set(['sess-current-dev']);
+const LEGACY_SEEDED_SESSION_HASHES = new Set([
+  sha256('default-dev-session-token'),
+  sha256('sess_dev_token')
+]);
+const LEGACY_SEEDED_RECRUITER_IDS = new Set(['rt-seed-1', 'rt-seed-2']);
+const LEGACY_SEEDED_RECRUITER_HASHES = new Set([
+  sha256('REC-2026-DEMO-7890-TEST'),
+  sha256('REC-2026-DEV-ACCESS-0001'),
+  sha256('REC-2026-DEV-PREVIEW')
+]);
+
+export function migrateStateObject(
+  rawState: any,
+  env: NodeJS.ProcessEnv = process.env
+): { state: InternalServerState; mutated: boolean } {
+  assertSecuritySecrets(env);
+  const parsed: InternalServerState = structuredClone(rawState);
+  let mutated = false;
+
+  if (parsed.owner) {
+    if (!parsed.owner.passwordHash || !parsed.owner.passwordSalt || parsed.owner.credentialVersion !== 2) {
+      const salt = generateSalt();
+      parsed.owner.passwordSalt = salt;
+      parsed.owner.passwordHash = hashPassword(env.ADMIN_PASSWORD!, salt);
+      parsed.owner.credentialVersion = 2;
+      mutated = true;
+    }
+
+    if (!parsed.owner.preferredDisplayName) {
+      parsed.owner.preferredDisplayName = parsed.owner.displayName || 'Karna';
+      mutated = true;
+    }
+    if (!parsed.owner.legalName) {
+      parsed.owner.legalName = parsed.owner.fullName || 'Chethan Kumar B S';
+      mutated = true;
+    }
+    if (!parsed.owner.professionalTitle) {
+      parsed.owner.professionalTitle = 'Computer Science Engineer | AI & Intelligent Systems | Cybersecurity';
+      mutated = true;
+    }
+    if (!parsed.owner.location) {
+      parsed.owner.location = 'Bengaluru, India';
+      mutated = true;
+    }
+    if (!parsed.owner.inAppNotifications) {
+      parsed.owner.inAppNotifications = [];
+      mutated = true;
+    }
+    if (!parsed.owner.fcmTokens) {
+      parsed.owner.fcmTokens = [];
+      mutated = true;
+    }
+    if (!parsed.owner.passkeys) {
+      parsed.owner.passkeys = [];
+      mutated = true;
+    }
+
+    if (!parsed.owner.authenticators) {
+      parsed.owner.authenticators = [];
+      mutated = true;
+      if (parsed.owner.totpSecret) {
+        parsed.owner.authenticators.push({
+          id: 'auth-google-migrated',
+          type: 'GOOGLE_AUTHENTICATOR',
+          label: 'Google Authenticator',
+          enrolledAt: parsed.owner.totpEnrolledAt || new Date().toISOString(),
+          enrolledAtIST: formatIST(parsed.owner.totpEnrolledAt ? new Date(parsed.owner.totpEnrolledAt) : new Date()),
+          lastVerifiedAt: formatIST(new Date()),
+          status: 'ENROLLED',
+          secret: parsed.owner.totpSecret
+        });
+      }
+    }
+  }
+
+  if (!Array.isArray(parsed.sessions)) {
+    parsed.sessions = [];
+    mutated = true;
+  } else {
+    const filteredSessions = parsed.sessions.filter((s) => {
+      if (!s) return false;
+      const id = String(s.id || '');
+      if (LEGACY_SEEDED_SESSION_IDS.has(id) || id.startsWith('sess-seed')) return false;
+      if (s.sessionTokenHash && LEGACY_SEEDED_SESSION_HASHES.has(s.sessionTokenHash)) return false;
+      return true;
+    });
+    if (filteredSessions.length !== parsed.sessions.length) {
+      parsed.sessions = filteredSessions;
+      mutated = true;
+    }
+  }
+
+  if (!Array.isArray(parsed.recruiterTokens)) {
+    parsed.recruiterTokens = [];
+    mutated = true;
+  } else {
+    const filteredTokens = parsed.recruiterTokens.filter((t) => {
+      if (!t) return false;
+      const id = String(t.id || '');
+      if (LEGACY_SEEDED_RECRUITER_IDS.has(id) || id.startsWith('rt-seed')) return false;
+      if (t.tokenHash && LEGACY_SEEDED_RECRUITER_HASHES.has(t.tokenHash)) return false;
+      return true;
+    });
+    if (filteredTokens.length !== parsed.recruiterTokens.length) {
+      parsed.recruiterTokens = filteredTokens;
+      mutated = true;
+    }
+  }
+
+  if (!Array.isArray(parsed.auditLogs)) {
+    parsed.auditLogs = [];
+    mutated = true;
+  }
+
+  return { state: parsed, mutated };
+}
+
 class SecurityStateManager {
   private state: InternalServerState;
   // Ephemeral in-memory challenges (never stored to disk)
   public currentWebAuthnChallenge: string | null = null;
-  public webauthnChallenges: Map<string, { challenge: string; type: 'registration' | 'authentication'; expiresAt: number; userId?: string }> = new Map();
+  public webauthnChallenges: Map<string, {
+    challenge: string;
+    type: 'registration' | 'authentication';
+    expiresAt: number;
+    userId?: string;
+    rpID?: string;
+    expectedOrigins?: string[];
+  }> = new Map();
   public pendingEmailOTP: EmailVerificationOTP | null = null;
   public pendingPhoneOTP: { codeHash: string; destination: string; expiresAt: number; channel: 'SMS' | 'WHATSAPP' } | null = null;
   public pendingEmailChange: { oldEmail: string; newEmail: string; codeHash: string; expiresAt: number; attempts: number } | null = null;
   public pendingRecoveryEmailChange: { oldEmail: string; newEmail: string; codeHash: string; expiresAt: number; attempts: number } | null = null;
   public pendingLoginChallenges: Map<string, { userId: string; expiresAt: number; primaryAuthCompleted: boolean }> = new Map();
 
-  public saveWebAuthnChallenge(challenge: string, type: 'registration' | 'authentication', userId?: string): void {
+  public saveWebAuthnChallenge(
+    challenge: string,
+    type: 'registration' | 'authentication',
+    userId?: string,
+    rpID?: string,
+    expectedOrigins?: string[]
+  ): void {
     this.currentWebAuthnChallenge = challenge;
     const now = Date.now();
     this.webauthnChallenges.set(challenge, {
       challenge,
       type,
       expiresAt: now + 5 * 60 * 1000, // 5 minutes
-      userId
+      userId,
+      rpID,
+      expectedOrigins
     });
     // Evict expired challenges
     if (this.webauthnChallenges.size > 50) {
@@ -122,17 +258,27 @@ class SecurityStateManager {
     }
   }
 
+  public getWebAuthnChallengeEntry(challenge: string) {
+    return this.webauthnChallenges.get(challenge);
+  }
+
   public isWebAuthnChallengeValid(challenge: string, type: 'registration' | 'authentication', userId?: string): boolean {
     if (!challenge) return false;
     const entry = this.webauthnChallenges.get(challenge);
-    return Boolean(entry && entry.type === type && Date.now() <= entry.expiresAt && (!userId || entry.userId === userId));
+    return Boolean(entry && entry.type === type && Date.now() <= entry.expiresAt && entry.userId === userId);
+  }
+
+  public consumeWebAuthnChallenge(challenge: string): void {
+    this.webauthnChallenges.delete(challenge);
+    if (this.currentWebAuthnChallenge === challenge) {
+      this.currentWebAuthnChallenge = null;
+    }
   }
 
   public verifyAndConsumeWebAuthnChallenge(challenge: string, type: 'registration' | 'authentication', userId?: string): boolean {
-    if (!this.isWebAuthnChallengeValid(challenge, type, userId)) return false;
-    this.webauthnChallenges.delete(challenge);
-    if (this.currentWebAuthnChallenge === challenge) this.currentWebAuthnChallenge = null;
-    return true;
+    const valid = this.isWebAuthnChallengeValid(challenge, type, userId);
+    this.consumeWebAuthnChallenge(challenge);
+    return valid;
   }
 
   constructor() {
@@ -252,8 +398,11 @@ class SecurityStateManager {
   }
 
   private loadState(): InternalServerState {
+    assertSecuritySecrets(process.env);
     const target = getTargetStateFile();
     const fallbackPath = path.join(process.cwd(), 'server', 'security-state.json');
+
+    let parsed: any = null;
     try {
       let fileToRead: string | null = null;
       if (fs.existsSync(target)) {
@@ -266,73 +415,20 @@ class SecurityStateManager {
 
       if (fileToRead) {
         const raw = fs.readFileSync(fileToRead, 'utf-8');
-        const parsed = JSON.parse(raw);
-        
-        // Ensure owner password hash is initialized
-        if (parsed.owner && (!parsed.owner.passwordHash || !parsed.owner.passwordSalt || parsed.owner.credentialVersion !== 2)) {
-          const salt = generateSalt();
-          const defaultPassword = process.env.ADMIN_PASSWORD;
-          if (!defaultPassword || defaultPassword.length < 16) {
-            throw new Error('ADMIN_PASSWORD must be configured with at least 16 characters to migrate owner credentials.');
-          }
-          parsed.owner.passwordSalt = salt;
-          parsed.owner.passwordHash = hashPassword(defaultPassword, salt);
-          parsed.owner.credentialVersion = 2;
-        }
-
-        // Ensure preferred display name and legal name exist
-        if (parsed.owner) {
-          if (!parsed.owner.preferredDisplayName) {
-            parsed.owner.preferredDisplayName = parsed.owner.displayName || 'Karna';
-          }
-          if (!parsed.owner.legalName) {
-            parsed.owner.legalName = parsed.owner.fullName || 'Chethan Kumar B S';
-          }
-          if (!parsed.owner.professionalTitle) {
-            parsed.owner.professionalTitle = 'Computer Science Engineer | AI & Intelligent Systems | Cybersecurity';
-          }
-          if (!parsed.owner.location) {
-            parsed.owner.location = 'Bengaluru, India';
-          }
-          if (!parsed.owner.inAppNotifications) {
-            parsed.owner.inAppNotifications = [];
-          }
-          if (!parsed.owner.fcmTokens) {
-            parsed.owner.fcmTokens = [];
-          }
-          if (!parsed.owner.passkeys) {
-            parsed.owner.passkeys = [];
-          }
-        }
-
-        if (!parsed.sessions) {
-          parsed.sessions = [];
-        }
-        if (!parsed.auditLogs) {
-          parsed.auditLogs = [];
-        }
-
-        // Auto-migrate authenticators array if legacy state
-        if (parsed.owner && !parsed.owner.authenticators) {
-          parsed.owner.authenticators = [];
-          if (parsed.owner.totpSecret) {
-            parsed.owner.authenticators.push({
-              id: 'auth-google-migrated',
-              type: 'GOOGLE_AUTHENTICATOR',
-              label: 'Google Authenticator',
-              enrolledAt: parsed.owner.totpEnrolledAt || new Date().toISOString(),
-              enrolledAtIST: formatIST(parsed.owner.totpEnrolledAt ? new Date(parsed.owner.totpEnrolledAt) : new Date()),
-              lastVerifiedAt: formatIST(new Date()),
-              status: 'ENROLLED',
-              secret: parsed.owner.totpSecret
-            });
-          }
-        }
-        return parsed;
+        parsed = JSON.parse(raw);
       }
     } catch {
-      // Fallback on error
+      parsed = null;
     }
+
+    if (parsed) {
+      const migrated = migrateStateObject(parsed, process.env);
+      if (migrated.mutated) {
+        this.saveStateDirect(migrated.state);
+      }
+      return migrated.state;
+    }
+
     const defaultState = this.getDefaultState();
     this.saveStateDirect(defaultState);
     return defaultState;
@@ -368,8 +464,9 @@ class SecurityStateManager {
       return false;
     }
     const o = this.state.owner;
-    // Check against configured ADMIN_PASSWORD env if set
-    if (process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
+    // Check against configured ADMIN_PASSWORD env only if it satisfies minimum length
+    const configured = process.env.ADMIN_PASSWORD;
+    if (configured && configured.trim().length >= 16 && safeCompare(password, configured)) {
       return true;
     }
     // Check against salt & hash
@@ -380,10 +477,14 @@ class SecurityStateManager {
   }
 
   public setOwnerPassword(newPassword: string): void {
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 16) {
+      throw new Error('Administrator password must be at least 16 characters long.');
+    }
     const salt = generateSalt();
     const hash = hashPassword(newPassword, salt);
     this.state.owner.passwordSalt = salt;
     this.state.owner.passwordHash = hash;
+    this.state.owner.credentialVersion = 2;
     this.save();
   }
 
@@ -439,7 +540,7 @@ class SecurityStateManager {
   public addInAppNotification(notification: Omit<InAppNotification, 'id' | 'timestamp' | 'timestampIST' | 'read' | 'dismissed'>): InAppNotification {
     const now = new Date();
     const entry: InAppNotification = {
-      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: `notif-${Date.now()}-${generateSecureTokenHex(4)}`,
       timestamp: now.toISOString(),
       timestampIST: formatIST(now),
       createdAt: now.toISOString(),
@@ -746,7 +847,7 @@ class SecurityStateManager {
     }
 
     const log: AuditLogEntry = {
-      id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: `audit-${Date.now()}-${generateSecureTokenHex(4)}`,
       timestamp: now.toISOString(),
       timestampIST: formatIST(now),
       ...entry,
