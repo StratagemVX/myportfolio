@@ -1,5 +1,5 @@
 {
-  "lastSyncedAt": "2026-11-10T11:53:30.063Z",
+  "lastSyncedAt": "2026-11-11T11:29:49.001Z",
   "repositoryCount": 22,
   "owner": {
     "fullName": "Chethan Kumar B S",
@@ -18,17 +18,57 @@
   },
   "projects": [
     {
-      "id": "myportfolio",
-      "name": "myportfolio",
-      "slug": "myportfolio",
+      "id": "shadowcomm",
+      "name": "ShadowComm",
+      "slug": "shadowcomm",
+      "headline": "Covert Asynchronous Communication Protocol (Architecture & Design Phase)",
+      "description": "Architectural blueprint and protocol specifications for a covert, metadata-resistant communication channel over non-standard transport sockets.",
+      "category": "Experimental & Research",
+      "technologies": [
+        "Python",
+        "C++",
+        "Socket Programming",
+        "Cryptography"
+      ],
+      "language": "Architecture Spec",
+      "repositoryUrl": "https://github.com/StratagemVX/ShadowComm",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Experimental",
+      "problemStatement": "Standard network communication exposes traffic packet sizes and timing characteristics, allowing adversaries to perform statistical traffic correlation even on encrypted streams.",
+      "purpose": "Research and specify transport morphing and packet padding protocols that resist heuristic metadata correlation.",
+      "targetUsers": "Security researchers exploring protocol covert channels.",
+      "keyCapabilities": [
+        "Protocol frame specifications for traffic padding normalization",
+        "Diffie-Hellman ephemeral handshake protocol design",
+        "Threat model against passive timing correlation attacks"
+      ],
+      "architectureOverview": "Designed as a client-server daemon architecture with customizable transport covert carriers.",
+      "myContribution": "Formulated protocol specification, state transitions, and cryptographic requirements.",
+      "technicalChallenges": [
+        "Minimizing protocol latency while inserting random dummy packets to defeat timing correlation."
+      ],
+      "limitations": "Repository is in architectural research phase; code implementation actively being finalized.",
+      "futureWork": [
+        "Release initial C++ socket multiplexer prototype with synthetic packet pacing."
+      ],
+      "lastUpdated": "2026-11-10T14:24:21Z",
+      "defaultBranch": "maintenance/repository-quality-improvements",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.000Z"
+    },
+    {
+      "id": "lab-project",
+      "name": "Lab-Project",
+      "slug": "lab-project",
       "headline": "Public engineering repository.",
       "description": "Repository under active engineering.",
-      "category": "Full-Stack Development",
+      "category": "Academic & Laboratory",
       "technologies": [
-        "TypeScript"
+        "HTML"
       ],
-      "language": "TypeScript",
-      "repositoryUrl": "https://github.com/StratagemVX/myportfolio",
+      "language": "HTML",
+      "repositoryUrl": "https://github.com/StratagemVX/Lab-Project",
       "liveDemoUrl": null,
       "isFeatured": false,
       "status": "Active Engineering",
@@ -48,10 +88,10 @@
       "futureWork": [
         "Continued feature development."
       ],
-      "lastUpdated": "2026-11-10T11:09:58Z",
+      "lastUpdated": "2026-11-10T14:24:13Z",
       "defaultBranch": "main",
       "sourceOfTruth": "github-api",
-      "lastSyncedAt": "2026-11-10T11:53:30.061Z"
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
     },
     {
       "id": "dravidproject",
@@ -84,10 +124,668 @@
       "futureWork": [
         "Continued feature development."
       ],
-      "lastUpdated": "2026-10-02T03:30:25Z",
+      "lastUpdated": "2026-11-10T14:22:59Z",
       "defaultBranch": "main",
       "sourceOfTruth": "github-api",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "lab-programs",
+      "name": "Lab-programs",
+      "slug": "lab-programs",
+      "headline": "Public engineering repository.",
+      "description": "Repository under active engineering.",
+      "category": "Academic & Laboratory",
+      "technologies": [
+        "HTML"
+      ],
+      "language": "HTML",
+      "repositoryUrl": "https://github.com/StratagemVX/Lab-programs",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Active Engineering",
+      "problemStatement": "Problem statement and scope documented in repository.",
+      "purpose": "Engineered as part of active development portfolio.",
+      "targetUsers": "Developers and engineering reviewers.",
+      "keyCapabilities": [
+        "Modular codebase",
+        "Version controlled on GitHub"
+      ],
+      "architectureOverview": "Architecture documented in repository source files.",
+      "myContribution": "Original repository implementation.",
+      "technicalChallenges": [
+        "Iterative system design and testing."
+      ],
+      "limitations": "None documented in repository.",
+      "futureWork": [
+        "Continued feature development."
+      ],
+      "lastUpdated": "2026-11-10T14:22:54Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "github-api",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "ml-lab",
+      "name": "Machine Learning Lab",
+      "slug": "ml-lab",
+      "headline": "Core Machine Learning Algorithms from Mathematical Foundations",
+      "description": "Hands-on implementation of foundational statistical machine learning models: Decision Trees (ID3), K-Nearest Neighbors, Backpropagation, and Naive Bayes.",
+      "category": "Academic & Laboratory",
+      "technologies": [
+        "Python",
+        "NumPy",
+        "Pandas",
+        "Scikit-Learn",
+        "JavaScript"
+      ],
+      "language": "JavaScript",
+      "repositoryUrl": "https://github.com/StratagemVX/Ml-lab",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Implemented",
+      "problemStatement": "Demystifying machine learning mathematics by coding algorithms from foundational linear algebra and calculus rather than black-box libraries.",
+      "purpose": "Rigorous academic study of ML algorithm internals.",
+      "targetUsers": "Engineering students preparing for technical ML interviews.",
+      "keyCapabilities": [
+        "ID3 Decision Tree algorithm using Shannon Entropy and Information Gain",
+        "Artificial Neural Network backpropagation gradient descent from scratch",
+        "K-Nearest Neighbors distance metric benchmarking (Euclidean vs Manhattan)",
+        "EM (Expectation Maximization) and K-Means clustering comparison"
+      ],
+      "architectureOverview": "Clean Python algorithm modules with clear input/output schemas.",
+      "myContribution": "Implemented mathematical matrix calculations and verified classification boundaries.",
+      "technicalChallenges": [
+        "Preventing numerical underflow in probability multiplications during Naive Bayes calculations."
+      ],
+      "limitations": "Academic dataset scope; unoptimized for distributed cluster training.",
+      "futureWork": [
+        "Create interactive web visualizer for decision boundaries."
+      ],
+      "lastUpdated": "2026-11-10T14:22:48Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "nlplabprograms",
+      "name": "NLP Lab Programs",
+      "slug": "nlp-lab-programs",
+      "headline": "Computational Linguistics Laboratory Algorithms & Models",
+      "description": "Curated collection of core Natural Language Processing implementations including n-gram language models, HMM POS taggers, and text classifiers.",
+      "category": "Academic & Laboratory",
+      "technologies": [
+        "Python",
+        "NLTK",
+        "Scikit-Learn",
+        "HTML"
+      ],
+      "language": "HTML",
+      "repositoryUrl": "https://github.com/StratagemVX/nlplabprograms",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Implemented",
+      "problemStatement": "Understanding foundational mathematical algorithms underlying modern NLP before large language models.",
+      "purpose": "Academic reference and code implementations for university Natural Language Processing laboratory.",
+      "targetUsers": "CS students and researchers studying classical NLP mechanics.",
+      "keyCapabilities": [
+        "Tokenization, stemming, and lemmatization pipelines",
+        "Hidden Markov Model (HMM) Viterbi decoding for Part-of-Speech tagging",
+        "TF-IDF vectorization and Naive Bayes text classification",
+        "N-gram frequency estimation and smoothing algorithms"
+      ],
+      "architectureOverview": "Modular Python scripts accompanied by interactive HTML web documentation.",
+      "myContribution": "Authored algorithm scripts, validated mathematical proofs, and compiled documentation.",
+      "technicalChallenges": [
+        "Implementing Viterbi dynamic programming trellis without matrix indexing bugs."
+      ],
+      "limitations": "Designed for educational demonstration rather than production high-concurrency NLP pipelines.",
+      "futureWork": [
+        "Add Jupyter Notebook interactive walk-throughs."
+      ],
+      "lastUpdated": "2026-11-10T14:22:43Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "stratagemvx",
+      "name": "StratagemVX",
+      "slug": "stratagemvx",
+      "headline": "Public engineering repository.",
+      "description": "Repository under active engineering.",
+      "category": "Full-Stack Development",
+      "technologies": [
+        "Code"
+      ],
+      "language": "Code",
+      "repositoryUrl": "https://github.com/StratagemVX/StratagemVX",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Active Engineering",
+      "problemStatement": "Problem statement and scope documented in repository.",
+      "purpose": "Engineered as part of active development portfolio.",
+      "targetUsers": "Developers and engineering reviewers.",
+      "keyCapabilities": [
+        "Modular codebase",
+        "Version controlled on GitHub"
+      ],
+      "architectureOverview": "Architecture documented in repository source files.",
+      "myContribution": "Original repository implementation.",
+      "technicalChallenges": [
+        "Iterative system design and testing."
+      ],
+      "limitations": "None documented in repository.",
+      "futureWork": [
+        "Continued feature development."
+      ],
+      "lastUpdated": "2026-11-10T14:22:37Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "github-api",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "birthdaysurprizee",
+      "name": "birthdaysurprizee",
+      "slug": "birthdaysurprizee",
+      "headline": "Public engineering repository.",
+      "description": "Repository under active engineering.",
+      "category": "Full-Stack Development",
+      "technologies": [
+        "JavaScript"
+      ],
+      "language": "JavaScript",
+      "repositoryUrl": "https://github.com/StratagemVX/birthdaysurprizee",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Active Engineering",
+      "problemStatement": "Problem statement and scope documented in repository.",
+      "purpose": "Engineered as part of active development portfolio.",
+      "targetUsers": "Developers and engineering reviewers.",
+      "keyCapabilities": [
+        "Modular codebase",
+        "Version controlled on GitHub"
+      ],
+      "architectureOverview": "Architecture documented in repository source files.",
+      "myContribution": "Original repository implementation.",
+      "technicalChallenges": [
+        "Iterative system design and testing."
+      ],
+      "limitations": "None documented in repository.",
+      "futureWork": [
+        "Continued feature development."
+      ],
+      "lastUpdated": "2026-11-10T14:22:15Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "github-api",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "amulya-portfolio-webpage",
+      "name": "Amulya-portfolio-webpage",
+      "slug": "amulya-portfolio-webpage",
+      "headline": "Public engineering repository.",
+      "description": "Repository under active engineering.",
+      "category": "Full-Stack Development",
+      "technologies": [
+        "TypeScript"
+      ],
+      "language": "TypeScript",
+      "repositoryUrl": "https://github.com/StratagemVX/Amulya-portfolio-webpage",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Active Engineering",
+      "problemStatement": "Problem statement and scope documented in repository.",
+      "purpose": "Engineered as part of active development portfolio.",
+      "targetUsers": "Developers and engineering reviewers.",
+      "keyCapabilities": [
+        "Modular codebase",
+        "Version controlled on GitHub"
+      ],
+      "architectureOverview": "Architecture documented in repository source files.",
+      "myContribution": "Original repository implementation.",
+      "technicalChallenges": [
+        "Iterative system design and testing."
+      ],
+      "limitations": "None documented in repository.",
+      "futureWork": [
+        "Continued feature development."
+      ],
+      "lastUpdated": "2026-11-10T14:22:02Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "github-api",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "sdc-activity",
+      "name": "sdc-activity",
+      "slug": "sdc-activity",
+      "headline": "Public engineering repository.",
+      "description": "Repository under active engineering.",
+      "category": "AI & Machine Learning",
+      "technologies": [
+        "Jupyter Notebook"
+      ],
+      "language": "Jupyter Notebook",
+      "repositoryUrl": "https://github.com/StratagemVX/sdc-activity",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Active Engineering",
+      "problemStatement": "Problem statement and scope documented in repository.",
+      "purpose": "Engineered as part of active development portfolio.",
+      "targetUsers": "Developers and engineering reviewers.",
+      "keyCapabilities": [
+        "Modular codebase",
+        "Version controlled on GitHub"
+      ],
+      "architectureOverview": "Architecture documented in repository source files.",
+      "myContribution": "Original repository implementation.",
+      "technicalChallenges": [
+        "Iterative system design and testing."
+      ],
+      "limitations": "None documented in repository.",
+      "futureWork": [
+        "Continued feature development."
+      ],
+      "lastUpdated": "2026-11-10T14:21:51Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "github-api",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "microfinance",
+      "name": "Microfinance Management System",
+      "slug": "microfinance",
+      "headline": "Relational Ledger & Small-Scale Loan Portfolio Management Suite",
+      "description": "Full-stack web application for micro-lending operations, client loan schedules, interest calculation, and installment repayment tracking.",
+      "category": "Full-Stack Development",
+      "technologies": [
+        "Node.js",
+        "Express",
+        "EJS",
+        "MySQL",
+        "JavaScript"
+      ],
+      "language": "EJS",
+      "repositoryUrl": "https://github.com/StratagemVX/microfinance",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Implemented",
+      "problemStatement": "Small microfinance institutions struggle with manual paper records, leading to loan schedule discrepancies and overdue balance miscalculations.",
+      "purpose": "Provide a reliable database-backed ledger for loan disbursement, amortization schedules, and member account tracking.",
+      "targetUsers": "Microfinance officers and cooperative credit administrators.",
+      "keyCapabilities": [
+        "Automated amortization schedule generation",
+        "Member profile and KYC verification recording",
+        "Installment payment logging and balance reconciliation",
+        "Overdue balance flagging and reporting"
+      ],
+      "architectureOverview": "Server-rendered MVC architecture using Node.js, Express, and EJS templates connecting to a MySQL relational database.",
+      "myContribution": "Designed relational database schema, written SQL queries for balance calculation, and implemented server-side routes.",
+      "technicalChallenges": [
+        "Enforcing atomic database transactions during multi-step loan repayment entries."
+      ],
+      "limitations": "Traditional monolithic server-rendered architecture without single-page app reactivity.",
+      "futureWork": [
+        "Migration to REST/GraphQL API with React frontend."
+      ],
+      "lastUpdated": "2026-11-10T14:21:45Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "cloud-aat",
+      "name": "Cloud-AAT",
+      "slug": "cloud-aat",
+      "headline": "Distributed Cloud Computing & Containerization Architecture Assignment",
+      "description": "Academic exploration of cloud service models, containerization patterns, and microservice orchestration concepts implemented in Java and distributed frameworks.",
+      "category": "Cloud & Distributed Systems",
+      "technologies": [
+        "Java",
+        "Docker",
+        "REST API",
+        "Microservices"
+      ],
+      "language": "Java",
+      "repositoryUrl": "https://github.com/StratagemVX/Cloud-AAT",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Implemented",
+      "problemStatement": "Demonstrating practical understanding of decoupled cloud services and infrastructure scalability patterns.",
+      "purpose": "Coursework and experimental implementation for Advanced Academic Tasks in Cloud Computing.",
+      "targetUsers": "Academic reviewers and distributed systems engineers.",
+      "keyCapabilities": [
+        "RESTful service endpoint contracts",
+        "Containerization configuration for distributed service nodes",
+        "Performance measurement under synthetic request workloads"
+      ],
+      "architectureOverview": "Decoupled Java service modules designed for containerized deployment across simulated cloud instances.",
+      "myContribution": "Architected Java service endpoints, defined Docker container specs, and benchmarked request latency.",
+      "technicalChallenges": [
+        "Configuring inter-container networking and environment parameter propagation."
+      ],
+      "limitations": "Academic demonstration scope; not intended for high-concurrency production deployments.",
+      "futureWork": [
+        "Kubernetes Helm chart packaging."
+      ],
+      "lastUpdated": "2026-11-10T14:20:06Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "karnextracker",
+      "name": "Karnex Tracker (Momentum Workspace)",
+      "slug": "karnex-tracker",
+      "headline": "Local-First Productivity Workbook & Habit Management Engine",
+      "description": "Spreadsheet-style personal productivity workbook built with React and Vite, featuring zero cloud lock-in, client-side persistence, and printable dashboard reporting.",
+      "category": "Full-Stack Development",
+      "technologies": [
+        "React",
+        "Vite",
+        "JavaScript",
+        "IndexedDB",
+        "CSS Grid"
+      ],
+      "language": "JavaScript",
+      "repositoryUrl": "https://github.com/StratagemVX/KarnexTracker",
+      "liveDemoUrl": "https://karnex-tracker.vercel.app",
+      "isFeatured": false,
+      "status": "Implemented",
+      "problemStatement": "Cloud-dependent habit and assignment trackers suffer from subscription fatigue, tracking cookies, and data loss during offline work.",
+      "purpose": "A private, spreadsheet-inspired productivity engine running 100% on the user's device.",
+      "targetUsers": "Students and productivity-focused professionals seeking complete data sovereignty.",
+      "keyCapabilities": [
+        "Local-first state storage with automatic local persistence",
+        "Spreadsheet-inspired multi-row assignment and habit tracking matrix",
+        "Print-optimized reporting stylesheet for physical accountability audits",
+        "JSON import/export for zero-friction user data backups"
+      ],
+      "architectureOverview": "State-driven React architecture managing normalized tabular records in browser storage with print-specific media CSS queries.",
+      "myContribution": "Created the data matrix components, local storage persistence hooks, and print stylesheet.",
+      "technicalChallenges": [
+        "Managing deep state updates across dynamic workbook rows without causing full re-renders of the data grid."
+      ],
+      "limitations": "No native multi-device sync unless user manually transfers JSON backup files.",
+      "futureWork": [
+        "Add CRDT-based encrypted peer-to-peer sync."
+      ],
+      "lastUpdated": "2026-11-10T14:20:03Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "lab-clarity-final",
+      "name": "Lab Clarity",
+      "slug": "lab-clarity",
+      "headline": "Academic Laboratory Experiment & Project Submission Manager",
+      "description": "Streamlined web portal for university laboratory course management, student code submissions, and lab program verification.",
+      "category": "Academic & Laboratory",
+      "technologies": [
+        "TypeScript",
+        "React",
+        "Tailwind CSS"
+      ],
+      "language": "TypeScript",
+      "repositoryUrl": "https://github.com/StratagemVX/Lab-Clarity-Final",
+      "liveDemoUrl": null,
+      "isFeatured": false,
+      "status": "Implemented",
+      "problemStatement": "Lab coursework tracking across multiple academic terms frequently results in missed experiment deadlines and scattered code files.",
+      "purpose": "Centralize lab program schedules, test outputs, and submission statuses in an intuitive interface.",
+      "targetUsers": "Computer science students and faculty lab proctors.",
+      "keyCapabilities": [
+        "Structured experiment index categorized by curriculum syllabus",
+        "Code viewer with syntax highlighting and expected test outputs",
+        "Submission completion checklist"
+      ],
+      "architectureOverview": "Single-page React application with client-side state management.",
+      "myContribution": "Constructed user interface, cataloged lab curricula, and styled component hierarchy.",
+      "technicalChallenges": [
+        "Structuring diverse lab formats into a unified navigational schema."
+      ],
+      "limitations": "Client-centric state; lacks centralized LMS API integration.",
+      "futureWork": [
+        "Add automated test runner integration via Docker sandboxes."
+      ],
+      "lastUpdated": "2026-11-10T14:20:01Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "queue-buddy-final",
+      "name": "MediQueue",
+      "slug": "mediqueue",
+      "headline": "Real-Time Hospital Queue Orchestration & Patient Throughput Platform",
+      "description": "Full-stack healthcare queue management system utilizing React, TypeScript, Supabase PostgreSQL, and WebSockets to optimize patient intake and consultation workflows.",
+      "category": "Full-Stack Development",
+      "technologies": [
+        "React",
+        "TypeScript",
+        "Supabase",
+        "PostgreSQL",
+        "WebSockets",
+        "Tailwind CSS"
+      ],
+      "language": "TypeScript",
+      "repositoryUrl": "https://github.com/StratagemVX/Queue-buddy-final",
+      "liveDemoUrl": null,
+      "isFeatured": true,
+      "status": "Implemented",
+      "problemStatement": "Hospital outpatient departments experience chaotic bottlenecks, opaque wait times, and high receptionist administrative burdens due to manual token and queue handling.",
+      "purpose": "Provide a synchronized, three-portal system (Patient, Doctor, Administrator) that calculates dynamic wait times and coordinates patient flow in real time.",
+      "targetUsers": "Hospital outpatient clinics, attending physicians, intake staff, and arriving patients.",
+      "keyCapabilities": [
+        "Role-based portal architecture: Patient Token Tracker, Doctor Consultation Desk, Hospital Administrator Console",
+        "Real-time WebSocket event propagation for live token position changes",
+        "Estimated wait time calculation based on historical consultation durations per department",
+        "Doctor consultation lifecycle management: Call Next, In Consultation, Complete, No Show",
+        "Automated queue prioritization for urgent medical triage cases"
+      ],
+      "architectureOverview": "React client with role-based routing connecting to Supabase for Postgres relational storage, Row-Level Security (RLS) policies, and real-time WebSocket channel subscriptions for queue state broadcasts.",
+      "systemFlowDiagram": "Patient Booking -> Token Generation -> Supabase Realtime Channel -> Doctor Desk Call -> Patient Notification",
+      "myContribution": "Engineered the Doctor and Patient real-time views, configured database schemas and RLS security policies, and implemented token queue state machines.",
+      "technicalChallenges": [
+        "Handling concurrent token requests without race conditions in token counter increments under heavy intake load.",
+        "Maintaining persistent WebSocket subscriptions across mobile browsers during intermittent cellular connectivity drops."
+      ],
+      "limitations": "Currently designed for single-facility operations; multi-hospital federation requires tenant isolation schema changes.",
+      "futureWork": [
+        "SMS and WhatsApp gateway webhooks for token updates without requiring an active browser tab.",
+        "Predictive AI consultation duration forecasting using historical patient acuity metrics."
+      ],
+      "lastUpdated": "2026-11-10T14:19:57Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "arogyamitraa",
+      "name": "Arogya Mitra",
+      "slug": "arogya-mitra",
+      "headline": "Voice-First Multilingual Healthcare Assistant for Rural Communities",
+      "description": "Accessible healthcare interface combining voice interaction, multilingual translation, and offline-resilient UI for community health worker enablement.",
+      "category": "AI & Machine Learning",
+      "technologies": [
+        "Vite",
+        "React",
+        "TypeScript",
+        "Tailwind CSS",
+        "Firebase",
+        "Web Speech API"
+      ],
+      "language": "TypeScript",
+      "repositoryUrl": "https://github.com/StratagemVX/arogyamitraa",
+      "liveDemoUrl": null,
+      "isFeatured": true,
+      "status": "Implemented",
+      "problemStatement": "Rural and vernacular-first populations encounter severe language and literacy barriers when attempting to navigate digital symptom trackers and health portals.",
+      "purpose": "Democratize primary triage information through intuitive speech-to-text, regional language support, and clear visual symptom mapping.",
+      "targetUsers": "Rural citizens, community healthcare workers, and primary health clinics.",
+      "keyCapabilities": [
+        "Voice-driven input pipeline utilizing the browser Web Speech API for hands-free query submission",
+        "Multilingual interface supporting regional language selection",
+        "Triage guidance categorization with emergency escalation triggers",
+        "Offline-resilient design capable of caching symptom guides locally"
+      ],
+      "architectureOverview": "Client-centric single-page application with speech recognition event handlers feeding into symptom categorization heuristics and persistent Firebase user session stores.",
+      "systemFlowDiagram": "Voice Input -> Speech Recognition -> NLP Keyword Normalization -> Clinical Triage Guidance -> Audio / Visual Feedback",
+      "myContribution": "Developed the voice interaction wrapper, regional language toggle state, user conversation history caching, and accessibility-first responsive layout.",
+      "technicalChallenges": [
+        "Handling variations in rural network quality and microphone background noise during voice capture.",
+        "Providing reliable feedback when native speech recognition models lack specific dialect vocabulary."
+      ],
+      "limitations": "Relies on browser speech recognition support; accuracy diminishes in noisy ambient clinic environments without directional microphone hardware.",
+      "futureWork": [
+        "Integrate lightweight on-device Whisper WebAssembly model for fully offline voice transcription.",
+        "Add telemedicine video link integration."
+      ],
+      "lastUpdated": "2026-11-10T14:19:55Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "secret-snap",
+      "name": "SecretSnap",
+      "slug": "secret-snap",
+      "headline": "Secure Ephemeral Messaging Platform with Client-Side AES-256",
+      "description": "A privacy-focused communication system providing client-side AES-256 encryption, zero server-side storage, and automated message self-destruction timers.",
+      "category": "Cybersecurity & Cryptography",
+      "technologies": [
+        "TypeScript",
+        "React",
+        "AES-256",
+        "Web Cryptography API",
+        "Tailwind CSS"
+      ],
+      "language": "TypeScript",
+      "repositoryUrl": "https://github.com/StratagemVX/Secret-snap",
+      "liveDemoUrl": null,
+      "isFeatured": true,
+      "status": "Implemented",
+      "problemStatement": "Standard messaging applications frequently store plaintext or recoverable message metadata on centralized databases, exposing user communication to subpoena, data breach, and passive traffic inspection.",
+      "purpose": "Provide a disposable, zero-trace transmission channel where cryptographic operations are performed solely in client memory, and ciphertext self-destructs upon viewing or TTL expiration.",
+      "targetUsers": "Security professionals, privacy advocates, and individuals needing tamper-evident, ephemeral payload exchanges.",
+      "keyCapabilities": [
+        "In-browser AES-256-GCM symmetric payload encryption",
+        "Deterministic client-side key derivation via PBKDF2 with SHA-256",
+        "Configurable Time-To-Live (TTL) countdown triggers",
+        "Zero-knowledge server model (server acts as ephemeral relay only)",
+        "Single-view burn-after-reading verification hash"
+      ],
+      "architectureOverview": "The client application generates an ephemeral 256-bit key in memory via the Web Crypto API. The message payload is encrypted with an initialization vector (IV) and transmitted alongside an integrity MAC. The decryption key is embedded in the URL fragment (#), ensuring the server never observes the secret key.",
+      "systemFlowDiagram": "Client -> WebCrypto(AES-GCM) -> Encrypted Blob -> Relay Dispatch -> Recipient -> Key Fragment Hash -> Instant Burn",
+      "myContribution": "Engineered the client-side cryptographic pipeline, stateful self-destruction timer, memory wipe routines, and responsive dark-mode interface.",
+      "technicalChallenges": [
+        "Preventing cryptographic key leakage through browser history and URL query strings by restricting key material strictly to the URI fragment identifier.",
+        "Guaranteeing reliable memory sanitization upon message destruction within JavaScript's non-deterministic garbage collection lifecycle."
+      ],
+      "limitations": "Client-side encryption cannot prevent recipient physical screen capture (shoulder surfing or external cameras). Requires modern browser supporting the Web Cryptography API.",
+      "futureWork": [
+        "Implementation of WebAssembly-based post-quantum Kyber key encapsulation.",
+        "Optional steganographic image container encoding for covert carrier transmission."
+      ],
+      "lastUpdated": "2026-11-10T14:19:52Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "major-project",
+      "name": "PRISM — Predictive Risk Modeling Framework",
+      "slug": "prism-risk-modeling",
+      "headline": "CUDA-Accelerated Deep Learning Framework for Predictive Risk Assessment",
+      "description": "High-throughput machine learning pipeline implemented in Python 3.12 and PyTorch with hardware-accelerated CUDA execution for predictive risk modeling.",
+      "category": "AI & Machine Learning",
+      "technologies": [
+        "Python 3.12",
+        "PyTorch (CUDA 12.1)",
+        "TorchVision",
+        "TorchAudio",
+        "NumPy",
+        "Scikit-Learn",
+        "Python"
+      ],
+      "language": "Python",
+      "repositoryUrl": "https://github.com/StratagemVX/Major-Project",
+      "liveDemoUrl": null,
+      "isFeatured": true,
+      "status": "Active Engineering",
+      "problemStatement": "Predictive risk modeling across high-dimensional feature spaces frequently suffers from training bottlenecks, non-convergent gradients, and poor GPU memory utilization.",
+      "purpose": "Provide a high-throughput, modular deep learning framework optimized for multi-feature anomaly detection, risk quantification, and rapid matrix inference.",
+      "targetUsers": "Data scientists, risk intelligence analysts, and computational research teams.",
+      "keyCapabilities": [
+        "CUDA 12.1 native GPU kernel acceleration with automated device fallback",
+        "Modular deep neural network architecture with customizable loss formulations",
+        "Feature scaling, normalization, and outlier truncation preprocessing pipeline",
+        "Automated evaluation telemetry with confusion metrics and ROC-AUC assessment"
+      ],
+      "architectureOverview": "Python 3.12 pipeline structured with decoupled dataset loaders, PyTorch nn.Module architectures, CUDA memory caching, and checkpointed training epochs with tensor validation.",
+      "systemFlowDiagram": "Data Ingestion -> Tensor Pipeline -> CUDA Kernel Allocation -> Backprop / Loss Minimization -> Risk Prediction Engine",
+      "myContribution": "Engineered the PyTorch neural network layer architecture, CUDA device initialization checks, evaluation metrics logging, and data preprocessing scripts.",
+      "technicalChallenges": [
+        "Resolving CUDA driver memory fragmentation when batch processing disparate high-variance tensor structures.",
+        "Balancing precision vs inference latency for real-time risk classification loops."
+      ],
+      "limitations": "Maximum training throughput is bounded by available VRAM on single-GPU hardware configurations.",
+      "futureWork": [
+        "Implement FP16 mixed-precision training via PyTorch AMP (Automatic Mixed Precision).",
+        "Export inference graph to ONNX runtime for deployment on low-power edge gateways."
+      ],
+      "lastUpdated": "2026-11-10T14:19:49Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
+    },
+    {
+      "id": "sdc-level-3",
+      "name": "Shadow Message Cipher",
+      "slug": "shadow-message-cipher",
+      "headline": "Encrypted Real-Time Terminal Communication Suite with Multimedia Attachments",
+      "description": "Production-grade React + TypeScript secure messaging platform featuring end-to-end client-side encryption, encrypted voice/camera attachments, and terminal-grade interface ergonomics.",
+      "category": "Cybersecurity & Cryptography",
+      "technologies": [
+        "React",
+        "TypeScript",
+        "WebRTC",
+        "Web Audio API",
+        "AES Encryption",
+        "Tailwind CSS"
+      ],
+      "language": "TypeScript",
+      "repositoryUrl": "https://github.com/StratagemVX/SDC-Level-3",
+      "liveDemoUrl": null,
+      "isFeatured": true,
+      "status": "Implemented",
+      "problemStatement": "Most secure communication platforms restrict payloads to plain text or rely on heavy native binaries that require complex OS privileges.",
+      "purpose": "Deliver an in-browser encrypted communication suite supporting multimedia streams (camera captures, voice notes, binary files) with minimal runtime overhead.",
+      "targetUsers": "Security teams and engineers requiring private ad-hoc data exchange channels.",
+      "keyCapabilities": [
+        "Full client-side payload encryption for multimedia blobs and audio buffers",
+        "Direct camera and microphone capture directly into in-memory cipher streams",
+        "Real-time cipher verification and authentication state machine",
+        "Session self-wipe and local cache isolation"
+      ],
+      "architectureOverview": "Constructed with modular React state containers driving WebRTC / MediaStream capture nodes. Audio and image streams are converted to Uint8Array binary buffers, passed through an AES cipher transformer, and packaged into chunked frames for transmission.",
+      "systemFlowDiagram": "MediaStream -> Uint8Array Buffer -> AES Stream Transform -> Frame Dispatch -> Symmetric Decrypt -> Render",
+      "myContribution": "Authored the media stream capture hooks, binary buffer serialization, encrypted chunk delivery mechanism, and terminal aesthetic UI components.",
+      "technicalChallenges": [
+        "Synchronizing encrypted audio chunk reconstruction across asynchronous browser event loops without introducing audible jitter or distortion.",
+        "Managing memory consumption when encrypting high-resolution camera frames entirely in browser heap memory."
+      ],
+      "limitations": "High resolution video encryption can experience frame drops on resource-constrained mobile hardware due to JavaScript single-threaded crypto loop overhead.",
+      "futureWork": [
+        "Offload crypto transformations to dedicated Web Workers to ensure 60fps UI responsiveness during bulk multimedia encryption.",
+        "Add multi-party encrypted room topologies."
+      ],
+      "lastUpdated": "2026-11-10T14:19:45Z",
+      "defaultBranch": "main",
+      "sourceOfTruth": "curated-sync",
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
     },
     {
       "id": "spellsense-nlp-aat",
@@ -132,587 +830,15 @@
         "Incorporate BERT/transformer-based masked language modeling for context-aware homophone correction (e.g. 'their' vs 'there').",
         "Add phonetic Soundex and Metaphone distance comparisons."
       ],
-      "lastUpdated": "2026-09-30T13:51:05Z",
+      "lastUpdated": "2026-11-10T14:19:41Z",
       "defaultBranch": "main",
       "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
     },
     {
-      "id": "nlplabprograms",
-      "name": "NLP Lab Programs",
-      "slug": "nlp-lab-programs",
-      "headline": "Computational Linguistics Laboratory Algorithms & Models",
-      "description": "Curated collection of core Natural Language Processing implementations including n-gram language models, HMM POS taggers, and text classifiers.",
-      "category": "Academic & Laboratory",
-      "technologies": [
-        "Python",
-        "NLTK",
-        "Scikit-Learn",
-        "HTML"
-      ],
-      "language": "HTML",
-      "repositoryUrl": "https://github.com/StratagemVX/nlplabprograms",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Implemented",
-      "problemStatement": "Understanding foundational mathematical algorithms underlying modern NLP before large language models.",
-      "purpose": "Academic reference and code implementations for university Natural Language Processing laboratory.",
-      "targetUsers": "CS students and researchers studying classical NLP mechanics.",
-      "keyCapabilities": [
-        "Tokenization, stemming, and lemmatization pipelines",
-        "Hidden Markov Model (HMM) Viterbi decoding for Part-of-Speech tagging",
-        "TF-IDF vectorization and Naive Bayes text classification",
-        "N-gram frequency estimation and smoothing algorithms"
-      ],
-      "architectureOverview": "Modular Python scripts accompanied by interactive HTML web documentation.",
-      "myContribution": "Authored algorithm scripts, validated mathematical proofs, and compiled documentation.",
-      "technicalChallenges": [
-        "Implementing Viterbi dynamic programming trellis without matrix indexing bugs."
-      ],
-      "limitations": "Designed for educational demonstration rather than production high-concurrency NLP pipelines.",
-      "futureWork": [
-        "Add Jupyter Notebook interactive walk-throughs."
-      ],
-      "lastUpdated": "2026-09-23T17:02:15Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "ml-lab",
-      "name": "Machine Learning Lab",
-      "slug": "ml-lab",
-      "headline": "Core Machine Learning Algorithms from Mathematical Foundations",
-      "description": "Hands-on implementation of foundational statistical machine learning models: Decision Trees (ID3), K-Nearest Neighbors, Backpropagation, and Naive Bayes.",
-      "category": "Academic & Laboratory",
-      "technologies": [
-        "Python",
-        "NumPy",
-        "Pandas",
-        "Scikit-Learn",
-        "JavaScript"
-      ],
-      "language": "JavaScript",
-      "repositoryUrl": "https://github.com/StratagemVX/Ml-lab",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Implemented",
-      "problemStatement": "Demystifying machine learning mathematics by coding algorithms from foundational linear algebra and calculus rather than black-box libraries.",
-      "purpose": "Rigorous academic study of ML algorithm internals.",
-      "targetUsers": "Engineering students preparing for technical ML interviews.",
-      "keyCapabilities": [
-        "ID3 Decision Tree algorithm using Shannon Entropy and Information Gain",
-        "Artificial Neural Network backpropagation gradient descent from scratch",
-        "K-Nearest Neighbors distance metric benchmarking (Euclidean vs Manhattan)",
-        "EM (Expectation Maximization) and K-Means clustering comparison"
-      ],
-      "architectureOverview": "Clean Python algorithm modules with clear input/output schemas.",
-      "myContribution": "Implemented mathematical matrix calculations and verified classification boundaries.",
-      "technicalChallenges": [
-        "Preventing numerical underflow in probability multiplications during Naive Bayes calculations."
-      ],
-      "limitations": "Academic dataset scope; unoptimized for distributed cluster training.",
-      "futureWork": [
-        "Create interactive web visualizer for decision boundaries."
-      ],
-      "lastUpdated": "2026-05-26T04:21:26Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "lab-programs",
-      "name": "Lab-programs",
-      "slug": "lab-programs",
-      "headline": "Public engineering repository.",
-      "description": "Repository under active engineering.",
-      "category": "Academic & Laboratory",
-      "technologies": [
-        "HTML"
-      ],
-      "language": "HTML",
-      "repositoryUrl": "https://github.com/StratagemVX/Lab-programs",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Active Engineering",
-      "problemStatement": "Problem statement and scope documented in repository.",
-      "purpose": "Engineered as part of active development portfolio.",
-      "targetUsers": "Developers and engineering reviewers.",
-      "keyCapabilities": [
-        "Modular codebase",
-        "Version controlled on GitHub"
-      ],
-      "architectureOverview": "Architecture documented in repository source files.",
-      "myContribution": "Original repository implementation.",
-      "technicalChallenges": [
-        "Iterative system design and testing."
-      ],
-      "limitations": "None documented in repository.",
-      "futureWork": [
-        "Continued feature development."
-      ],
-      "lastUpdated": "2026-05-18T02:29:13Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "github-api",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "birthdaysurprizee",
-      "name": "birthdaysurprizee",
-      "slug": "birthdaysurprizee",
-      "headline": "Public engineering repository.",
-      "description": "Repository under active engineering.",
-      "category": "Full-Stack Development",
-      "technologies": [
-        "JavaScript"
-      ],
-      "language": "JavaScript",
-      "repositoryUrl": "https://github.com/StratagemVX/birthdaysurprizee",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Active Engineering",
-      "problemStatement": "Problem statement and scope documented in repository.",
-      "purpose": "Engineered as part of active development portfolio.",
-      "targetUsers": "Developers and engineering reviewers.",
-      "keyCapabilities": [
-        "Modular codebase",
-        "Version controlled on GitHub"
-      ],
-      "architectureOverview": "Architecture documented in repository source files.",
-      "myContribution": "Original repository implementation.",
-      "technicalChallenges": [
-        "Iterative system design and testing."
-      ],
-      "limitations": "None documented in repository.",
-      "futureWork": [
-        "Continued feature development."
-      ],
-      "lastUpdated": "2026-05-17T00:12:29Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "github-api",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "lab-project",
-      "name": "Lab-Project",
-      "slug": "lab-project",
-      "headline": "Public engineering repository.",
-      "description": "Repository under active engineering.",
-      "category": "Academic & Laboratory",
-      "technologies": [
-        "HTML"
-      ],
-      "language": "HTML",
-      "repositoryUrl": "https://github.com/StratagemVX/Lab-Project",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Active Engineering",
-      "problemStatement": "Problem statement and scope documented in repository.",
-      "purpose": "Engineered as part of active development portfolio.",
-      "targetUsers": "Developers and engineering reviewers.",
-      "keyCapabilities": [
-        "Modular codebase",
-        "Version controlled on GitHub"
-      ],
-      "architectureOverview": "Architecture documented in repository source files.",
-      "myContribution": "Original repository implementation.",
-      "technicalChallenges": [
-        "Iterative system design and testing."
-      ],
-      "limitations": "None documented in repository.",
-      "futureWork": [
-        "Continued feature development."
-      ],
-      "lastUpdated": "2026-05-16T20:41:24Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "github-api",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "karnextracker",
-      "name": "Karnex Tracker (Momentum Workspace)",
-      "slug": "karnex-tracker",
-      "headline": "Local-First Productivity Workbook & Habit Management Engine",
-      "description": "Spreadsheet-style personal productivity workbook built with React and Vite, featuring zero cloud lock-in, client-side persistence, and printable dashboard reporting.",
-      "category": "Full-Stack Development",
-      "technologies": [
-        "React",
-        "Vite",
-        "JavaScript",
-        "IndexedDB",
-        "CSS Grid"
-      ],
-      "language": "JavaScript",
-      "repositoryUrl": "https://github.com/StratagemVX/KarnexTracker",
-      "liveDemoUrl": "https://karnex-tracker.vercel.app",
-      "isFeatured": false,
-      "status": "Implemented",
-      "problemStatement": "Cloud-dependent habit and assignment trackers suffer from subscription fatigue, tracking cookies, and data loss during offline work.",
-      "purpose": "A private, spreadsheet-inspired productivity engine running 100% on the user's device.",
-      "targetUsers": "Students and productivity-focused professionals seeking complete data sovereignty.",
-      "keyCapabilities": [
-        "Local-first state storage with automatic local persistence",
-        "Spreadsheet-inspired multi-row assignment and habit tracking matrix",
-        "Print-optimized reporting stylesheet for physical accountability audits",
-        "JSON import/export for zero-friction user data backups"
-      ],
-      "architectureOverview": "State-driven React architecture managing normalized tabular records in browser storage with print-specific media CSS queries.",
-      "myContribution": "Created the data matrix components, local storage persistence hooks, and print stylesheet.",
-      "technicalChallenges": [
-        "Managing deep state updates across dynamic workbook rows without causing full re-renders of the data grid."
-      ],
-      "limitations": "No native multi-device sync unless user manually transfers JSON backup files.",
-      "futureWork": [
-        "Add CRDT-based encrypted peer-to-peer sync."
-      ],
-      "lastUpdated": "2026-05-12T16:32:01Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "sdc-level-3",
-      "name": "Shadow Message Cipher",
-      "slug": "shadow-message-cipher",
-      "headline": "Encrypted Real-Time Terminal Communication Suite with Multimedia Attachments",
-      "description": "Production-grade React + TypeScript secure messaging platform featuring end-to-end client-side encryption, encrypted voice/camera attachments, and terminal-grade interface ergonomics.",
-      "category": "Cybersecurity & Cryptography",
-      "technologies": [
-        "React",
-        "TypeScript",
-        "WebRTC",
-        "Web Audio API",
-        "AES Encryption",
-        "Tailwind CSS"
-      ],
-      "language": "TypeScript",
-      "repositoryUrl": "https://github.com/StratagemVX/SDC-Level-3",
-      "liveDemoUrl": null,
-      "isFeatured": true,
-      "status": "Implemented",
-      "problemStatement": "Most secure communication platforms restrict payloads to plain text or rely on heavy native binaries that require complex OS privileges.",
-      "purpose": "Deliver an in-browser encrypted communication suite supporting multimedia streams (camera captures, voice notes, binary files) with minimal runtime overhead.",
-      "targetUsers": "Security teams and engineers requiring private ad-hoc data exchange channels.",
-      "keyCapabilities": [
-        "Full client-side payload encryption for multimedia blobs and audio buffers",
-        "Direct camera and microphone capture directly into in-memory cipher streams",
-        "Real-time cipher verification and authentication state machine",
-        "Session self-wipe and local cache isolation"
-      ],
-      "architectureOverview": "Constructed with modular React state containers driving WebRTC / MediaStream capture nodes. Audio and image streams are converted to Uint8Array binary buffers, passed through an AES cipher transformer, and packaged into chunked frames for transmission.",
-      "systemFlowDiagram": "MediaStream -> Uint8Array Buffer -> AES Stream Transform -> Frame Dispatch -> Symmetric Decrypt -> Render",
-      "myContribution": "Authored the media stream capture hooks, binary buffer serialization, encrypted chunk delivery mechanism, and terminal aesthetic UI components.",
-      "technicalChallenges": [
-        "Synchronizing encrypted audio chunk reconstruction across asynchronous browser event loops without introducing audible jitter or distortion.",
-        "Managing memory consumption when encrypting high-resolution camera frames entirely in browser heap memory."
-      ],
-      "limitations": "High resolution video encryption can experience frame drops on resource-constrained mobile hardware due to JavaScript single-threaded crypto loop overhead.",
-      "futureWork": [
-        "Offload crypto transformations to dedicated Web Workers to ensure 60fps UI responsiveness during bulk multimedia encryption.",
-        "Add multi-party encrypted room topologies."
-      ],
-      "lastUpdated": "2026-05-01T21:39:27Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "major-project",
-      "name": "PRISM — Predictive Risk Modeling Framework",
-      "slug": "prism-risk-modeling",
-      "headline": "CUDA-Accelerated Deep Learning Framework for Predictive Risk Assessment",
-      "description": "High-throughput machine learning pipeline implemented in Python 3.12 and PyTorch with hardware-accelerated CUDA execution for predictive risk modeling.",
-      "category": "AI & Machine Learning",
-      "technologies": [
-        "Python 3.12",
-        "PyTorch (CUDA 12.1)",
-        "TorchVision",
-        "TorchAudio",
-        "NumPy",
-        "Scikit-Learn",
-        "Python"
-      ],
-      "language": "Python",
-      "repositoryUrl": "https://github.com/StratagemVX/Major-Project",
-      "liveDemoUrl": null,
-      "isFeatured": true,
-      "status": "Active Engineering",
-      "problemStatement": "Predictive risk modeling across high-dimensional feature spaces frequently suffers from training bottlenecks, non-convergent gradients, and poor GPU memory utilization.",
-      "purpose": "Provide a high-throughput, modular deep learning framework optimized for multi-feature anomaly detection, risk quantification, and rapid matrix inference.",
-      "targetUsers": "Data scientists, risk intelligence analysts, and computational research teams.",
-      "keyCapabilities": [
-        "CUDA 12.1 native GPU kernel acceleration with automated device fallback",
-        "Modular deep neural network architecture with customizable loss formulations",
-        "Feature scaling, normalization, and outlier truncation preprocessing pipeline",
-        "Automated evaluation telemetry with confusion metrics and ROC-AUC assessment"
-      ],
-      "architectureOverview": "Python 3.12 pipeline structured with decoupled dataset loaders, PyTorch nn.Module architectures, CUDA memory caching, and checkpointed training epochs with tensor validation.",
-      "systemFlowDiagram": "Data Ingestion -> Tensor Pipeline -> CUDA Kernel Allocation -> Backprop / Loss Minimization -> Risk Prediction Engine",
-      "myContribution": "Engineered the PyTorch neural network layer architecture, CUDA device initialization checks, evaluation metrics logging, and data preprocessing scripts.",
-      "technicalChallenges": [
-        "Resolving CUDA driver memory fragmentation when batch processing disparate high-variance tensor structures.",
-        "Balancing precision vs inference latency for real-time risk classification loops."
-      ],
-      "limitations": "Maximum training throughput is bounded by available VRAM on single-GPU hardware configurations.",
-      "futureWork": [
-        "Implement FP16 mixed-precision training via PyTorch AMP (Automatic Mixed Precision).",
-        "Export inference graph to ONNX runtime for deployment on low-power edge gateways."
-      ],
-      "lastUpdated": "2026-05-01T10:14:37Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "cloud-aat",
-      "name": "Cloud-AAT",
-      "slug": "cloud-aat",
-      "headline": "Distributed Cloud Computing & Containerization Architecture Assignment",
-      "description": "Academic exploration of cloud service models, containerization patterns, and microservice orchestration concepts implemented in Java and distributed frameworks.",
-      "category": "Cloud & Distributed Systems",
-      "technologies": [
-        "Java",
-        "Docker",
-        "REST API",
-        "Microservices"
-      ],
-      "language": "Java",
-      "repositoryUrl": "https://github.com/StratagemVX/Cloud-AAT",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Implemented",
-      "problemStatement": "Demonstrating practical understanding of decoupled cloud services and infrastructure scalability patterns.",
-      "purpose": "Coursework and experimental implementation for Advanced Academic Tasks in Cloud Computing.",
-      "targetUsers": "Academic reviewers and distributed systems engineers.",
-      "keyCapabilities": [
-        "RESTful service endpoint contracts",
-        "Containerization configuration for distributed service nodes",
-        "Performance measurement under synthetic request workloads"
-      ],
-      "architectureOverview": "Decoupled Java service modules designed for containerized deployment across simulated cloud instances.",
-      "myContribution": "Architected Java service endpoints, defined Docker container specs, and benchmarked request latency.",
-      "technicalChallenges": [
-        "Configuring inter-container networking and environment parameter propagation."
-      ],
-      "limitations": "Academic demonstration scope; not intended for high-concurrency production deployments.",
-      "futureWork": [
-        "Kubernetes Helm chart packaging."
-      ],
-      "lastUpdated": "2026-03-25T13:34:48Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "secret-snap",
-      "name": "SecretSnap",
-      "slug": "secret-snap",
-      "headline": "Secure Ephemeral Messaging Platform with Client-Side AES-256",
-      "description": "A privacy-focused communication system providing client-side AES-256 encryption, zero server-side storage, and automated message self-destruction timers.",
-      "category": "Cybersecurity & Cryptography",
-      "technologies": [
-        "TypeScript",
-        "React",
-        "AES-256",
-        "Web Cryptography API",
-        "Tailwind CSS"
-      ],
-      "language": "TypeScript",
-      "repositoryUrl": "https://github.com/StratagemVX/Secret-snap",
-      "liveDemoUrl": null,
-      "isFeatured": true,
-      "status": "Implemented",
-      "problemStatement": "Standard messaging applications frequently store plaintext or recoverable message metadata on centralized databases, exposing user communication to subpoena, data breach, and passive traffic inspection.",
-      "purpose": "Provide a disposable, zero-trace transmission channel where cryptographic operations are performed solely in client memory, and ciphertext self-destructs upon viewing or TTL expiration.",
-      "targetUsers": "Security professionals, privacy advocates, and individuals needing tamper-evident, ephemeral payload exchanges.",
-      "keyCapabilities": [
-        "In-browser AES-256-GCM symmetric payload encryption",
-        "Deterministic client-side key derivation via PBKDF2 with SHA-256",
-        "Configurable Time-To-Live (TTL) countdown triggers",
-        "Zero-knowledge server model (server acts as ephemeral relay only)",
-        "Single-view burn-after-reading verification hash"
-      ],
-      "architectureOverview": "The client application generates an ephemeral 256-bit key in memory via the Web Crypto API. The message payload is encrypted with an initialization vector (IV) and transmitted alongside an integrity MAC. The decryption key is embedded in the URL fragment (#), ensuring the server never observes the secret key.",
-      "systemFlowDiagram": "Client -> WebCrypto(AES-GCM) -> Encrypted Blob -> Relay Dispatch -> Recipient -> Key Fragment Hash -> Instant Burn",
-      "myContribution": "Engineered the client-side cryptographic pipeline, stateful self-destruction timer, memory wipe routines, and responsive dark-mode interface.",
-      "technicalChallenges": [
-        "Preventing cryptographic key leakage through browser history and URL query strings by restricting key material strictly to the URI fragment identifier.",
-        "Guaranteeing reliable memory sanitization upon message destruction within JavaScript's non-deterministic garbage collection lifecycle."
-      ],
-      "limitations": "Client-side encryption cannot prevent recipient physical screen capture (shoulder surfing or external cameras). Requires modern browser supporting the Web Cryptography API.",
-      "futureWork": [
-        "Implementation of WebAssembly-based post-quantum Kyber key encapsulation.",
-        "Optional steganographic image container encoding for covert carrier transmission."
-      ],
-      "lastUpdated": "2026-03-24T19:05:03Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "stratagemvx",
-      "name": "StratagemVX",
-      "slug": "stratagemvx",
-      "headline": "Public engineering repository.",
-      "description": "Repository under active engineering.",
-      "category": "Full-Stack Development",
-      "technologies": [
-        "Code"
-      ],
-      "language": "Code",
-      "repositoryUrl": "https://github.com/StratagemVX/StratagemVX",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Active Engineering",
-      "problemStatement": "Problem statement and scope documented in repository.",
-      "purpose": "Engineered as part of active development portfolio.",
-      "targetUsers": "Developers and engineering reviewers.",
-      "keyCapabilities": [
-        "Modular codebase",
-        "Version controlled on GitHub"
-      ],
-      "architectureOverview": "Architecture documented in repository source files.",
-      "myContribution": "Original repository implementation.",
-      "technicalChallenges": [
-        "Iterative system design and testing."
-      ],
-      "limitations": "None documented in repository.",
-      "futureWork": [
-        "Continued feature development."
-      ],
-      "lastUpdated": "2026-03-02T06:23:04Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "github-api",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "sdc-activity",
-      "name": "sdc-activity",
-      "slug": "sdc-activity",
-      "headline": "Public engineering repository.",
-      "description": "Repository under active engineering.",
-      "category": "AI & Machine Learning",
-      "technologies": [
-        "Jupyter Notebook"
-      ],
-      "language": "Jupyter Notebook",
-      "repositoryUrl": "https://github.com/StratagemVX/sdc-activity",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Active Engineering",
-      "problemStatement": "Problem statement and scope documented in repository.",
-      "purpose": "Engineered as part of active development portfolio.",
-      "targetUsers": "Developers and engineering reviewers.",
-      "keyCapabilities": [
-        "Modular codebase",
-        "Version controlled on GitHub"
-      ],
-      "architectureOverview": "Architecture documented in repository source files.",
-      "myContribution": "Original repository implementation.",
-      "technicalChallenges": [
-        "Iterative system design and testing."
-      ],
-      "limitations": "None documented in repository.",
-      "futureWork": [
-        "Continued feature development."
-      ],
-      "lastUpdated": "2026-02-13T05:07:27Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "github-api",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "arogyamitraa",
-      "name": "Arogya Mitra",
-      "slug": "arogya-mitra",
-      "headline": "Voice-First Multilingual Healthcare Assistant for Rural Communities",
-      "description": "Accessible healthcare interface combining voice interaction, multilingual translation, and offline-resilient UI for community health worker enablement.",
-      "category": "AI & Machine Learning",
-      "technologies": [
-        "Vite",
-        "React",
-        "TypeScript",
-        "Tailwind CSS",
-        "Firebase",
-        "Web Speech API"
-      ],
-      "language": "TypeScript",
-      "repositoryUrl": "https://github.com/StratagemVX/arogyamitraa",
-      "liveDemoUrl": null,
-      "isFeatured": true,
-      "status": "Implemented",
-      "problemStatement": "Rural and vernacular-first populations encounter severe language and literacy barriers when attempting to navigate digital symptom trackers and health portals.",
-      "purpose": "Democratize primary triage information through intuitive speech-to-text, regional language support, and clear visual symptom mapping.",
-      "targetUsers": "Rural citizens, community healthcare workers, and primary health clinics.",
-      "keyCapabilities": [
-        "Voice-driven input pipeline utilizing the browser Web Speech API for hands-free query submission",
-        "Multilingual interface supporting regional language selection",
-        "Triage guidance categorization with emergency escalation triggers",
-        "Offline-resilient design capable of caching symptom guides locally"
-      ],
-      "architectureOverview": "Client-centric single-page application with speech recognition event handlers feeding into symptom categorization heuristics and persistent Firebase user session stores.",
-      "systemFlowDiagram": "Voice Input -> Speech Recognition -> NLP Keyword Normalization -> Clinical Triage Guidance -> Audio / Visual Feedback",
-      "myContribution": "Developed the voice interaction wrapper, regional language toggle state, user conversation history caching, and accessibility-first responsive layout.",
-      "technicalChallenges": [
-        "Handling variations in rural network quality and microphone background noise during voice capture.",
-        "Providing reliable feedback when native speech recognition models lack specific dialect vocabulary."
-      ],
-      "limitations": "Relies on browser speech recognition support; accuracy diminishes in noisy ambient clinic environments without directional microphone hardware.",
-      "futureWork": [
-        "Integrate lightweight on-device Whisper WebAssembly model for fully offline voice transcription.",
-        "Add telemedicine video link integration."
-      ],
-      "lastUpdated": "2026-02-12T11:26:11Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "microfinance",
-      "name": "Microfinance Management System",
-      "slug": "microfinance",
-      "headline": "Relational Ledger & Small-Scale Loan Portfolio Management Suite",
-      "description": "Full-stack web application for micro-lending operations, client loan schedules, interest calculation, and installment repayment tracking.",
-      "category": "Full-Stack Development",
-      "technologies": [
-        "Node.js",
-        "Express",
-        "EJS",
-        "MySQL",
-        "JavaScript"
-      ],
-      "language": "EJS",
-      "repositoryUrl": "https://github.com/StratagemVX/microfinance",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Implemented",
-      "problemStatement": "Small microfinance institutions struggle with manual paper records, leading to loan schedule discrepancies and overdue balance miscalculations.",
-      "purpose": "Provide a reliable database-backed ledger for loan disbursement, amortization schedules, and member account tracking.",
-      "targetUsers": "Microfinance officers and cooperative credit administrators.",
-      "keyCapabilities": [
-        "Automated amortization schedule generation",
-        "Member profile and KYC verification recording",
-        "Installment payment logging and balance reconciliation",
-        "Overdue balance flagging and reporting"
-      ],
-      "architectureOverview": "Server-rendered MVC architecture using Node.js, Express, and EJS templates connecting to a MySQL relational database.",
-      "myContribution": "Designed relational database schema, written SQL queries for balance calculation, and implemented server-side routes.",
-      "technicalChallenges": [
-        "Enforcing atomic database transactions during multi-step loan repayment entries."
-      ],
-      "limitations": "Traditional monolithic server-rendered architecture without single-page app reactivity.",
-      "futureWork": [
-        "Migration to REST/GraphQL API with React frontend."
-      ],
-      "lastUpdated": "2026-01-20T17:22:12Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "amulya-portfolio-webpage",
-      "name": "Amulya-portfolio-webpage",
-      "slug": "amulya-portfolio-webpage",
+      "id": "myportfolio",
+      "name": "myportfolio",
+      "slug": "myportfolio",
       "headline": "Public engineering repository.",
       "description": "Repository under active engineering.",
       "category": "Full-Stack Development",
@@ -720,7 +846,7 @@
         "TypeScript"
       ],
       "language": "TypeScript",
-      "repositoryUrl": "https://github.com/StratagemVX/Amulya-portfolio-webpage",
+      "repositoryUrl": "https://github.com/StratagemVX/myportfolio",
       "liveDemoUrl": null,
       "isFeatured": false,
       "status": "Active Engineering",
@@ -740,136 +866,10 @@
       "futureWork": [
         "Continued feature development."
       ],
-      "lastUpdated": "2026-01-19T12:29:19Z",
+      "lastUpdated": "2026-11-10T14:18:20Z",
       "defaultBranch": "main",
       "sourceOfTruth": "github-api",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "lab-clarity-final",
-      "name": "Lab Clarity",
-      "slug": "lab-clarity",
-      "headline": "Academic Laboratory Experiment & Project Submission Manager",
-      "description": "Streamlined web portal for university laboratory course management, student code submissions, and lab program verification.",
-      "category": "Academic & Laboratory",
-      "technologies": [
-        "TypeScript",
-        "React",
-        "Tailwind CSS"
-      ],
-      "language": "TypeScript",
-      "repositoryUrl": "https://github.com/StratagemVX/Lab-Clarity-Final",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Implemented",
-      "problemStatement": "Lab coursework tracking across multiple academic terms frequently results in missed experiment deadlines and scattered code files.",
-      "purpose": "Centralize lab program schedules, test outputs, and submission statuses in an intuitive interface.",
-      "targetUsers": "Computer science students and faculty lab proctors.",
-      "keyCapabilities": [
-        "Structured experiment index categorized by curriculum syllabus",
-        "Code viewer with syntax highlighting and expected test outputs",
-        "Submission completion checklist"
-      ],
-      "architectureOverview": "Single-page React application with client-side state management.",
-      "myContribution": "Constructed user interface, cataloged lab curricula, and styled component hierarchy.",
-      "technicalChallenges": [
-        "Structuring diverse lab formats into a unified navigational schema."
-      ],
-      "limitations": "Client-centric state; lacks centralized LMS API integration.",
-      "futureWork": [
-        "Add automated test runner integration via Docker sandboxes."
-      ],
-      "lastUpdated": "2026-01-19T12:18:25Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "queue-buddy-final",
-      "name": "MediQueue",
-      "slug": "mediqueue",
-      "headline": "Real-Time Hospital Queue Orchestration & Patient Throughput Platform",
-      "description": "Full-stack healthcare queue management system utilizing React, TypeScript, Supabase PostgreSQL, and WebSockets to optimize patient intake and consultation workflows.",
-      "category": "Full-Stack Development",
-      "technologies": [
-        "React",
-        "TypeScript",
-        "Supabase",
-        "PostgreSQL",
-        "WebSockets",
-        "Tailwind CSS"
-      ],
-      "language": "TypeScript",
-      "repositoryUrl": "https://github.com/StratagemVX/Queue-buddy-final",
-      "liveDemoUrl": null,
-      "isFeatured": true,
-      "status": "Implemented",
-      "problemStatement": "Hospital outpatient departments experience chaotic bottlenecks, opaque wait times, and high receptionist administrative burdens due to manual token and queue handling.",
-      "purpose": "Provide a synchronized, three-portal system (Patient, Doctor, Administrator) that calculates dynamic wait times and coordinates patient flow in real time.",
-      "targetUsers": "Hospital outpatient clinics, attending physicians, intake staff, and arriving patients.",
-      "keyCapabilities": [
-        "Role-based portal architecture: Patient Token Tracker, Doctor Consultation Desk, Hospital Administrator Console",
-        "Real-time WebSocket event propagation for live token position changes",
-        "Estimated wait time calculation based on historical consultation durations per department",
-        "Doctor consultation lifecycle management: Call Next, In Consultation, Complete, No Show",
-        "Automated queue prioritization for urgent medical triage cases"
-      ],
-      "architectureOverview": "React client with role-based routing connecting to Supabase for Postgres relational storage, Row-Level Security (RLS) policies, and real-time WebSocket channel subscriptions for queue state broadcasts.",
-      "systemFlowDiagram": "Patient Booking -> Token Generation -> Supabase Realtime Channel -> Doctor Desk Call -> Patient Notification",
-      "myContribution": "Engineered the Doctor and Patient real-time views, configured database schemas and RLS security policies, and implemented token queue state machines.",
-      "technicalChallenges": [
-        "Handling concurrent token requests without race conditions in token counter increments under heavy intake load.",
-        "Maintaining persistent WebSocket subscriptions across mobile browsers during intermittent cellular connectivity drops."
-      ],
-      "limitations": "Currently designed for single-facility operations; multi-hospital federation requires tenant isolation schema changes.",
-      "futureWork": [
-        "SMS and WhatsApp gateway webhooks for token updates without requiring an active browser tab.",
-        "Predictive AI consultation duration forecasting using historical patient acuity metrics."
-      ],
-      "lastUpdated": "2026-01-19T12:14:22Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
-    },
-    {
-      "id": "shadowcomm",
-      "name": "ShadowComm",
-      "slug": "shadowcomm",
-      "headline": "Covert Asynchronous Communication Protocol (Architecture & Design Phase)",
-      "description": "Architectural blueprint and protocol specifications for a covert, metadata-resistant communication channel over non-standard transport sockets.",
-      "category": "Experimental & Research",
-      "technologies": [
-        "Python",
-        "C++",
-        "Socket Programming",
-        "Cryptography"
-      ],
-      "language": "Architecture Spec",
-      "repositoryUrl": "https://github.com/StratagemVX/ShadowComm",
-      "liveDemoUrl": null,
-      "isFeatured": false,
-      "status": "Experimental",
-      "problemStatement": "Standard network communication exposes traffic packet sizes and timing characteristics, allowing adversaries to perform statistical traffic correlation even on encrypted streams.",
-      "purpose": "Research and specify transport morphing and packet padding protocols that resist heuristic metadata correlation.",
-      "targetUsers": "Security researchers exploring protocol covert channels.",
-      "keyCapabilities": [
-        "Protocol frame specifications for traffic padding normalization",
-        "Diffie-Hellman ephemeral handshake protocol design",
-        "Threat model against passive timing correlation attacks"
-      ],
-      "architectureOverview": "Designed as a client-server daemon architecture with customizable transport covert carriers.",
-      "myContribution": "Formulated protocol specification, state transitions, and cryptographic requirements.",
-      "technicalChallenges": [
-        "Minimizing protocol latency while inserting random dummy packets to defeat timing correlation."
-      ],
-      "limitations": "Repository is in architectural research phase; code implementation actively being finalized.",
-      "futureWork": [
-        "Release initial C++ socket multiplexer prototype with synthetic packet pacing."
-      ],
-      "lastUpdated": "2025-12-12T18:42:38Z",
-      "defaultBranch": "main",
-      "sourceOfTruth": "curated-sync",
-      "lastSyncedAt": "2026-11-10T11:53:30.062Z"
+      "lastSyncedAt": "2026-11-11T11:29:49.001Z"
     }
   ]
 }
