@@ -207,7 +207,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
   };
 
   return (
-    <div className="py-20 font-mono text-xs">
+    <div className="min-h-[calc(100vh-4rem)] py-20 font-mono text-xs">
       <div className="max-w-lg mx-auto px-6 space-y-6">
         {/* Header Indicator */}
         <div className="inline-flex items-center space-x-2 text-[11px] text-[#A8B8A7]">
@@ -228,7 +228,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
 
         {/* Success Alert */}
         {successMsg && (
-          <div className="p-3 bg-[#181A1F] border border-[#A8B8A7]/40 rounded text-[11px] text-[#A8B8A7] flex items-center space-x-2">
+          <div role="status" aria-live="polite" className="p-3 bg-[#181A1F] border border-[#A8B8A7]/40 rounded text-[11px] text-[#A8B8A7] flex items-center space-x-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{successMsg}</span>
           </div>
@@ -236,7 +236,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
 
         {/* Error Alert */}
         {errorMsg && (
-          <div className="p-3 bg-red-950/30 border border-red-500/40 rounded text-[11px] text-red-400 flex items-start space-x-2">
+          <div role="alert" aria-live="assertive" className="p-3 bg-red-950/30 border border-red-500/40 rounded text-[11px] text-red-400 flex items-start space-x-2">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{errorMsg}</span>
           </div>
@@ -258,7 +258,11 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
               Enter your verified administrator account email. A secure, single-use password recovery ticket will be dispatched to the server-side destination.
             </p>
             <form onSubmit={handleForgotPassword} className="space-y-3">
+              <label htmlFor="security-forgot-email" className="sr-only">
+                Verified administrator email
+              </label>
               <input
+                id="security-forgot-email"
                 type="email"
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
@@ -299,8 +303,9 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
             )}
 
             <div>
-              <label className="block text-[#A4A8AE] mb-1.5">Owner Login ID</label>
+              <label htmlFor="security-identifier" className="block text-[#A4A8AE] mb-1.5">Owner Login ID</label>
               <input
+                id="security-identifier"
                 type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
@@ -312,7 +317,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[#A4A8AE]">Password</label>
+                <label htmlFor="security-passphrase" className="text-[#A4A8AE]">Password</label>
                 <button
                   type="button"
                   onClick={() => setForgotPasswordOpen(true)}
@@ -323,6 +328,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
               </div>
               <div className="relative">
                 <input
+                  id="security-passphrase"
                   type={showPassword ? 'text' : 'password'}
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
@@ -350,7 +356,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
               <ArrowRight className="w-4 h-4" />
             </button>
 
-            <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between text-[11px] text-[#A4A8AE]">
+            <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between text-xs text-[#A4A8AE]">
               <span>Policy: Mandatory Multi-Factor Verification</span>
               <span className="text-[#A8B8A7]">Hardware MFA Enforced</span>
             </div>
@@ -397,7 +403,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
               <form onSubmit={handleVerifyTotp} className="space-y-4 pt-2">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-[#A4A8AE]">
+                    <label htmlFor="security-totp-code" className="block text-[#A4A8AE]">
                       Google / Microsoft Authenticator 6-Digit Code
                     </label>
                     <button
@@ -410,6 +416,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
                     </button>
                   </div>
                   <input
+                    id="security-totp-code"
                     type={showTotp ? 'text' : 'password'}
                     inputMode="numeric"
                     pattern="[0-9]*"
@@ -421,9 +428,9 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
                     autoFocus
                     className="w-full bg-[#101114] border border-[rgba(255,255,255,0.08)] rounded p-3 text-center text-xl tracking-[0.3em] font-mono text-[#A8B8A7] focus:outline-none focus:border-[#A8B8A7]"
                   />
-                  <p className="text-[11px] text-[#A4A8AE] mt-1.5 flex flex-col gap-0.5">
+                  <p className="text-xs text-[#A4A8AE] mt-1.5 flex flex-col gap-0.5">
                     <span>Enter the 6-digit code from your authenticator application.</span>
-                    <span className="text-[#A4A8AE]/70 font-mono text-[10px]">
+                    <span className="text-[#9CA1AA] font-mono text-[11px]">
                       RFC 6238 TOTP verification with strict 30-second time synchronization.
                     </span>
                   </p>
@@ -468,7 +475,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
               <form onSubmit={handleVerifyRecovery} className="space-y-4 pt-2">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-[#A4A8AE]">
+                    <label htmlFor="security-recovery-code" className="block text-[#A4A8AE]">
                       Single-Use Emergency Recovery Code
                     </label>
                     <button
@@ -481,6 +488,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
                     </button>
                   </div>
                   <input
+                    id="security-recovery-code"
                     type={showRecovery ? 'text' : 'password'}
                     value={recoveryCode}
                     onChange={(e) => setRecoveryCode(e.target.value.toUpperCase())}
@@ -524,7 +532,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
         )}
 
         {/* Security Architecture Footnote */}
-        <div className="p-4 bg-[#181A1F] border border-[rgba(255,255,255,0.06)] rounded text-[11px] text-[#A4A8AE]/80 space-y-1">
+        <div className="p-4 bg-[#181A1F] border border-[rgba(255,255,255,0.06)] rounded text-xs text-[#A4A8AE] space-y-1">
           <div className="flex items-center space-x-1.5 text-[#A8B8A7] font-semibold">
             <HelpCircle className="w-3.5 h-3.5" />
             <span>ENTERPRISE SECURITY SPECIFICATION</span>

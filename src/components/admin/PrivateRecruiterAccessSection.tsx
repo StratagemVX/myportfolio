@@ -92,7 +92,7 @@ export default function PrivateRecruiterAccessSection() {
       <div className="border-b border-[rgba(255,255,255,0.08)] pb-5 space-y-2">
         <div className="flex items-center space-x-2 text-[#A8B8A7]">
           <Key className="w-4 h-4" />
-          <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Private Recruiter Access</h3>
+          <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Private Recruiter Access</h2>
         </div>
         <p className="text-[#A4A8AE] text-xs leading-relaxed font-sans font-light">
           Create temporary, read-only invitation links for selected recruiters to access materials that are not part of the public portfolio.
@@ -174,8 +174,9 @@ export default function PrivateRecruiterAccessSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="sm:col-span-2">
-            <label className="block text-[#A4A8AE] text-[11px] mb-1">Recipient Label / Organization</label>
+            <label htmlFor="recruiter-recipient-label" className="block text-[#A4A8AE] text-[11px] mb-1">Recipient Label / Organization</label>
             <input
+              id="recruiter-recipient-label"
               type="text"
               value={recipientLabel}
               onChange={(e) => setRecipientLabel(e.target.value)}
@@ -185,8 +186,9 @@ export default function PrivateRecruiterAccessSection() {
           </div>
 
           <div>
-            <label className="block text-[#A4A8AE] text-[11px] mb-1">Expires After</label>
+            <label htmlFor="recruiter-expires-days" className="block text-[#A4A8AE] text-[11px] mb-1">Expires After</label>
             <select
+              id="recruiter-expires-days"
               value={expiresInDays}
               onChange={(e) => setExpiresInDays(Number(e.target.value))}
               className="w-full bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded p-2 text-[#F0F0ED] text-xs focus:outline-none focus:border-[#A8B8A7]"

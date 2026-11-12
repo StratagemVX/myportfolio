@@ -154,49 +154,53 @@ export default function ContactPage() {
                 <form onSubmit={handleSubmit} className="space-y-4 font-mono text-xs">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[#A4A8AE] block">Your name *</label>
+                      <label htmlFor="contact-name" className="text-[#A4A8AE] block">Your name *</label>
                       <input
+                        id="contact-name"
                         type="text"
                         required
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="Ada Lovelace"
-                        className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#A4A8AE]/40 focus:outline-none focus:border-[#A8B8A7]/70 transition-colors"
+                        className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#9CA1AA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8B8A7] focus:border-[#A8B8A7] transition-colors"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[#A4A8AE] block">Your email *</label>
+                      <label htmlFor="contact-email" className="text-[#A4A8AE] block">Your email *</label>
                       <input
+                        id="contact-email"
                         type="email"
                         required
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         placeholder="ada@example.com"
-                        className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#A4A8AE]/40 focus:outline-none focus:border-[#A8B8A7]/70 transition-colors"
+                        className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#9CA1AA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8B8A7] focus:border-[#A8B8A7] transition-colors"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[#A4A8AE] block">Subject / Context</label>
+                    <label htmlFor="contact-subject" className="text-[#A4A8AE] block">Subject / Context</label>
                     <input
+                      id="contact-subject"
                       type="text"
                       value={formData.subject}
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                       placeholder="Engineering Role / Project Discussion / Systems Collaboration"
-                      className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#A4A8AE]/40 focus:outline-none focus:border-[#A8B8A7]/70 transition-colors"
+                      className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#9CA1AA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8B8A7] focus:border-[#A8B8A7] transition-colors"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[#A4A8AE] block">Message *</label>
+                    <label htmlFor="contact-message" className="text-[#A4A8AE] block">Message *</label>
                     <textarea
+                      id="contact-message"
                       required
                       rows={5}
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       placeholder="Briefly describe your team, opportunity, or technical inquiry..."
-                      className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#A4A8AE]/40 focus:outline-none focus:border-[#A8B8A7]/70 transition-colors resize-none font-sans text-xs"
+                      className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#9CA1AA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8B8A7] focus:border-[#A8B8A7] transition-colors resize-none font-sans text-xs"
                     />
                   </div>
 

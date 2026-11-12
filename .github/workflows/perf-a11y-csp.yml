@@ -1,0 +1,141 @@
+name: Performance, Accessibility, CSP & AI Discoverability Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - perf/lighthouse-a11y-ai-discoverability
+
+permissions:
+  contents: read
+
+jobs:
+  quality-csp-discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Test-only values. Never use these in any deployment environment.
+      NODE_ENV: test
+      ADMIN_PASSWORD: ci-only-test-password-not-for-deployment-2026
+      SECURITY_HMAC_KEY: ci-only-test-key-never-use-in-deployment-32-bytes-minimum
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npx tsc --noEmit
+
+      - name: Build application and generated API bundles
+        run: npm run build
+
+      - name: Verify generated API bundle consistency
+        run: |
+          cmp -s api/index.js "api/[...path].js"
+          git diff --exit-code -- api/index.js "api/[...path].js"
+
+      - name: Run test suite
+        env:
+          # Test-only values for post-PR #1 fail-closed startup validation compatibility
+          NODE_ENV: test
+          ADMIN_PASSWORD: ci-only-test-password-not-for-deployment-2026
+          SECURITY_HMAC_KEY: ci-only-test-key-never-use-in-deployment-32-bytes-minimum
+        run: npm test
+
+      - name: Audit full dependency tree (zero vulnerabilities required)
+        run: npm audit
+
+      - name: Audit production dependencies (zero vulnerabilities required)
+        run: npm audit --omit=dev
+
+      - name: Validate CSP configuration
+        run: |
+          node - <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+
+          const vercel = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
+          const allRules = vercel.headers || [];
+          const globalRule = allRules.find((r) => r.source === '/(.*)');
+          assert.ok(globalRule, 'Missing global /(.*) security header rule');
+
+          const headerMap = Object.fromEntries(globalRule.headers.map((h) => [h.key.toLowerCase(), h.value]));
+          const csp = headerMap['content-security-policy'] || '';
+          assert.ok(csp.length > 0, 'CSP header must be present');
+
+          const scriptSrc = (csp.match(/script-src\s+([^;]+)/i) || [])[1] || '';
+          assert.ok(!scriptSrc.includes("'unsafe-inline'"), 'script-src must not allow unsafe-inline');
+          assert.ok(scriptSrc.includes('https://*.auth0.com'), 'script-src must allow Auth0');
+          assert.match(csp, /object-src\s+'none'/i, 'object-src none required');
+          assert.match(csp, /frame-ancestors\s+'none'/i, 'frame-ancestors none required');
+          assert.match(csp, /require-trusted-types-for\s+'script'/i, 'Trusted Types enforcement required');
+          assert.match(csp, /trusted-types\s+[^;]*portfolio-jsonld/i, 'portfolio-jsonld Trusted Types policy required');
+          assert.equal(headerMap['x-frame-options'], 'DENY');
+          assert.equal(headerMap['x-content-type-options'], 'nosniff');
+          assert.match(headerMap['strict-transport-security'] || '', /max-age=63072000/);
+
+          const seoHead = fs.readFileSync('src/components/SEOHead.tsx', 'utf8');
+          assert.match(seoHead, /createPolicy\(['"]portfolio-jsonld['"]/, 'SEOHead must register portfolio-jsonld Trusted Types policy');
+          console.log('CSP configuration validation passed.');
+          NODE
+
+      - name: Validate AI discovery manifests and admin isolation
+        run: |
+          node - <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+
+          const llms = fs.readFileSync('dist/llms.txt', 'utf8');
+          assert.match(llms, /^#\s+/m, 'llms.txt must start with H1 heading');
+          assert.ok(!llms.includes('/admin'), 'llms.txt must exclude /admin');
+
+          const robots = fs.readFileSync('dist/robots.txt', 'utf8');
+          assert.match(robots, /^Disallow:\s*\/admin/m, 'robots.txt must disallow /admin');
+
+          for (const rel of ['dist/ai-catalog.json', 'dist/.well-known/ard.json', 'dist/.well-known/ai-catalog.json']) {
+            const raw = fs.readFileSync(rel, 'utf8');
+            assert.ok(!raw.includes('/admin'), `${rel} must exclude /admin`);
+            const doc = JSON.parse(raw);
+            assert.equal(doc.specVersion, '1.0', `${rel} must declare specVersion 1.0`);
+            assert.ok(doc.host?.identifier?.startsWith('did:web:'), `${rel} must use did:web host identifier`);
+            assert.ok(Array.isArray(doc.entries) && doc.entries.length >= 3, `${rel} must contain entries`);
+            for (const entry of doc.entries) {
+              assert.ok(entry.identifier?.startsWith('urn:'), `${rel} entry missing URN identifier`);
+              assert.ok(entry.url?.startsWith('https://'), `${rel} entry missing HTTPS URL`);
+            }
+          }
+          console.log('AI discovery manifest validation passed.');
+          NODE
+
+      - name: Install Playwright Chromium browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright browser, CSP, Trusted Types & WCAG 2.2 AA (axe-core) tests
+        run: npm run test:e2e
+
+      - name: Run reproducible Lighthouse performance & Core Web Vitals audit
+        env:
+          LH_RUNS: '3'
+        run: |
+          npm install -g lighthouse@12.8.2
+          lighthouse --version
+          npm run lighthouse:audit
+
+      - name: Upload Playwright & Lighthouse verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-a11y-csp-verification-reports
+          path: |
+            playwright-report/
+            .lighthouse-results/
+          retention-days: 30

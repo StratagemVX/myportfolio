@@ -49,9 +49,9 @@ export default function IntegrationMatrixSection() {
         <div>
           <div className="flex items-center space-x-2 text-[#A8B8A7]">
             <ShieldCheck className="w-4 h-4" />
-            <h3 className="font-display text-lg font-medium text-[#F0F0ED]">
+            <h2 className="font-display text-lg font-medium text-[#F0F0ED]">
               Enterprise Integration Verification Matrix
-            </h3>
+            </h2>
           </div>
           <p className="text-[#A4A8AE] text-xs leading-relaxed mt-1 font-sans font-light">
             Live operational status across identity, transactional email, SMS gateways, and WebAuthn hardware.

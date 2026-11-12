@@ -11,7 +11,10 @@
     "server": "vite-node server/index.ts",
     "start:server": "vite-node server/index.ts",
     "sync:github": "node scripts/sync-github.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "preview:prod": "node scripts/serve-production-preview.mjs",
+    "lighthouse:audit": "node scripts/run-lighthouse-audit.mjs"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.2.4",
@@ -30,10 +33,12 @@
     "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^5.2.0",
     "autoprefixer": "^10.4.19",
+    "axe-core": "^4.14.0",
     "esbuild": "^0.28.2",
     "postcss": "^8.4.38",
     "puppeteer-core": "^25.16.0",

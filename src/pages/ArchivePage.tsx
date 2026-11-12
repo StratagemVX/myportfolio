@@ -52,23 +52,32 @@ export default function ArchivePage() {
         {/* Filter Toolbar */}
         <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between font-mono text-xs">
           <div className="relative flex-1 max-w-lg">
-            <Search className="w-4 h-4 text-[#A4A8AE] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <label htmlFor="archive-search-input" className="sr-only">
+              Filter repositories by name, language, or stack
+            </label>
+            <Search className="w-4 h-4 text-[#A4A8AE] absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
             <input
+              id="archive-search-input"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter by name, language (Python, TypeScript, C++), or stack..."
-              className="w-full bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg pl-10 pr-4 py-2.5 text-[#F0F0ED] placeholder-[#A4A8AE]/50 focus:outline-none focus:border-[#A8B8A7]/70 transition-colors"
+              className="w-full bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg pl-10 pr-4 py-2.5 text-[#F0F0ED] placeholder-[#9CA1AA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8B8A7] focus:border-[#A8B8A7] transition-colors"
             />
           </div>
 
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg px-3 py-1.5">
-              <Filter className="w-3.5 h-3.5 text-[#A8B8A7] shrink-0" />
+              <label htmlFor="archive-category-filter" className="sr-only">
+                Filter repositories by category
+              </label>
+              <Filter className="w-3.5 h-3.5 text-[#A8B8A7] shrink-0" aria-hidden="true" />
               <select
+                id="archive-category-filter"
+                aria-label="Filter repositories by category"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-transparent text-[#F0F0ED] focus:outline-none text-xs font-mono cursor-pointer"
+                className="bg-transparent text-[#F0F0ED] rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8B8A7] text-xs font-mono cursor-pointer"
               >
                 {categories.map((c) => (
                   <option key={c} value={c} className="bg-[#181A1F] text-[#F0F0ED]">
@@ -113,12 +122,12 @@ export default function ArchivePage() {
                           <span className="text-[#F0F0ED] font-medium text-sm font-sans">{project.name}</span>
                         )}
                         {project.isFeatured && (
-                          <span className="text-[10px] text-[#A8B8A7] px-2 py-0.5 rounded bg-[#A8B8A7]/10 font-mono border border-[#A8B8A7]/20">
+                          <span className="text-[11px] text-[#A8B8A7] px-2 py-0.5 rounded bg-[#A8B8A7]/10 font-mono border border-[#A8B8A7]/20">
                             Featured
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-[#A4A8AE] font-light max-w-xl leading-relaxed">
+                      <p className="text-xs text-[#A4A8AE] font-light max-w-xl leading-relaxed">
                         {project.headline || project.description}
                       </p>
                     </div>
@@ -131,7 +140,7 @@ export default function ArchivePage() {
                       {project.technologies.slice(0, 3).map((t) => (
                         <span
                           key={t}
-                          className="px-2 py-0.5 rounded bg-[#1F2228] text-[10px] text-[#D4D6D2] border border-[rgba(255,255,255,0.05)]"
+                          className="px-2 py-0.5 rounded bg-[#1F2228] text-[11px] text-[#D4D6D2] border border-[rgba(255,255,255,0.05)]"
                         >
                           {t}
                         </span>
@@ -140,7 +149,7 @@ export default function ArchivePage() {
                   </td>
                   <td className="py-4 px-5">
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded font-mono ${
+                      className={`text-[11px] px-2 py-0.5 rounded font-mono ${
                         project.status === 'Implemented'
                           ? 'bg-[#A8B8A7]/10 text-[#A8B8A7] border border-[#A8B8A7]/20'
                           : project.status === 'Experimental'
@@ -157,7 +166,7 @@ export default function ArchivePage() {
                         href={project.repositoryUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center space-x-1 text-[#A4A8AE] hover:text-[#F0F0ED] text-[11px] px-2.5 py-1 rounded bg-[#181A1F] border border-[rgba(255,255,255,0.06)] hover:border-[#A8B8A7]/40 transition-colors"
+                        className="inline-flex items-center space-x-1 text-[#A4A8AE] hover:text-[#F0F0ED] text-xs px-2.5 py-1 rounded bg-[#181A1F] border border-[rgba(255,255,255,0.06)] hover:border-[#A8B8A7]/40 transition-colors"
                         title="GitHub Repository"
                       >
                         <Github className="w-3.5 h-3.5" />
@@ -166,7 +175,7 @@ export default function ArchivePage() {
                       {project.isFeatured && (
                         <Link
                           to={`/project/${project.slug}`}
-                          className="text-[#A8B8A7] hover:underline text-[11px] font-mono"
+                          className="text-[#A8B8A7] hover:underline text-xs font-mono"
                         >
                           Case study →
                         </Link>

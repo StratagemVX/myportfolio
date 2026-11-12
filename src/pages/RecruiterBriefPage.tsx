@@ -214,7 +214,11 @@ export default function RecruiterBriefPage() {
           </p>
 
           <form onSubmit={handleVerify} className="flex flex-col sm:flex-row gap-3 max-w-md font-mono text-xs">
+            <label htmlFor="recruiter-brief-token" className="sr-only">
+              Recruiter invitation token
+            </label>
             <input
+              id="recruiter-brief-token"
               type="text"
               value={token}
               onChange={(e) => setToken(e.target.value)}

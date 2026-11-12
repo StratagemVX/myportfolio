@@ -1,0 +1,66 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "identifier": "did:web:chethan-kumar-portfolio.vercel.app",
+    "displayName": "Chethan Kumar Engineering Portfolio",
+    "url": "https://chethan-kumar-portfolio.vercel.app/",
+    "documentationUrl": "https://chethan-kumar-portfolio.vercel.app/llms.txt"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:chethan-kumar-portfolio:docs:llms-txt",
+      "displayName": "Portfolio LLMs Guide",
+      "type": "text/markdown",
+      "url": "https://chethan-kumar-portfolio.vercel.app/llms.txt",
+      "description": "Structured Markdown summary of Chethan Kumar's public engineering portfolio routes and technical focus areas.",
+      "representativeQueries": [
+        "Summarize Chethan Kumar's engineering portfolio",
+        "List public pages and technical case studies on this site"
+      ]
+    },
+    {
+      "identifier": "urn:air:chethan-kumar-portfolio:catalog:projects",
+      "displayName": "Featured Engineering Case Studies",
+      "type": "text/html",
+      "url": "https://chethan-kumar-portfolio.vercel.app/work",
+      "description": "Public engineering case studies covering AI, NLP, applied cryptography, and full-stack architecture.",
+      "representativeQueries": [
+        "View Chethan Kumar's featured AI and cybersecurity projects",
+        "Inspect system architecture case studies"
+      ]
+    },
+    {
+      "identifier": "urn:air:chethan-kumar-portfolio:catalog:evidence",
+      "displayName": "Technical Evidence Matrix",
+      "type": "text/html",
+      "url": "https://chethan-kumar-portfolio.vercel.app/evidence",
+      "description": "Verified mapping from engineering competencies to concrete GitHub source repositories.",
+      "representativeQueries": [
+        "Verify technical skills with GitHub source evidence",
+        "Check cryptographic and NLP implementation proofs"
+      ]
+    },
+    {
+      "identifier": "urn:air:chethan-kumar-portfolio:catalog:archive",
+      "displayName": "Repository Archive Index",
+      "type": "text/html",
+      "url": "https://chethan-kumar-portfolio.vercel.app/archive",
+      "description": "Searchable repository index with language, stack, and category filtering.",
+      "representativeQueries": [
+        "Search repositories by programming language or stack",
+        "Browse complete GitHub project archive"
+      ]
+    },
+    {
+      "identifier": "urn:air:chethan-kumar-portfolio:sitemap:xml",
+      "displayName": "Portfolio XML Sitemap",
+      "type": "application/xml",
+      "url": "https://chethan-kumar-portfolio.vercel.app/sitemap.xml",
+      "description": "Canonical URL index for public portfolio routes and project pages.",
+      "representativeQueries": [
+        "Discover all public portfolio URLs",
+        "Fetch sitemap for portfolio indexing"
+      ]
+    }
+  ]
+}

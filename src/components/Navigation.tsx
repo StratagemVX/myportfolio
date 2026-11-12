@@ -95,8 +95,9 @@ export default function Navigation() {
           <Link
             to="/admin"
             title="Owner Security Console"
+            aria-label="Owner Security Console"
             className={`p-1.5 transition-colors ${
-              location.pathname === '/admin' ? 'text-[#A8B8A7]' : 'text-[#484D58] hover:text-[#A4A8AE]'
+              location.pathname === '/admin' ? 'text-[#A8B8A7]' : 'text-[#9CA1AA] hover:text-[#F0F0ED]'
             }`}
           >
             <Lock className="w-3.5 h-3.5" />
@@ -106,8 +107,9 @@ export default function Navigation() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="lg:hidden p-2 text-[#A4A8AE] hover:text-[#F0F0ED] focus:outline-none"
+          className="lg:hidden p-2 text-[#A4A8AE] hover:text-[#F0F0ED] rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#A8B8A7]"
           aria-label="Toggle navigation menu"
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

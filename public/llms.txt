@@ -1,0 +1,20 @@
+# Chethan Kumar — AI, Cybersecurity & Software Engineering Portfolio
+
+> Official engineering portfolio of Chethan Kumar B S (GitHub: StratagemVX), Computer Science Engineer at MVJ College of Engineering, Bengaluru. Documents production and academic repositories across AI, NLP, applied cryptography, and full-stack software engineering.
+
+## Public Portfolio Pages
+
+- [Home](https://chethan-kumar-portfolio.vercel.app/): Engineering overview, core technical pillars, and interactive cryptography workbench.
+- [Engineering Projects (/work)](https://chethan-kumar-portfolio.vercel.app/work): Featured software systems and architectural case studies.
+- [Technical Evidence (/evidence)](https://chethan-kumar-portfolio.vercel.app/evidence): Capability-to-codebase verification matrix mapped to source repositories.
+- [Repository Archive (/archive)](https://chethan-kumar-portfolio.vercel.app/archive): Searchable index of public and academic software repositories.
+- [Academics (/academics)](https://chethan-kumar-portfolio.vercel.app/academics): Visvesvaraya Technological University (VTU) coursework and academic engineering foundation.
+- [Recruiter Brief (/recruiter-brief)](https://chethan-kumar-portfolio.vercel.app/recruiter-brief): Executive 60-second engineering assessment summary.
+- [Contact (/contact)](https://chethan-kumar-portfolio.vercel.app/contact): Direct engineering inquiry channels.
+- [Résumé (/resume)](https://chethan-kumar-portfolio.vercel.app/resume): Web-formatted engineering curriculum vitae.
+
+## Machine-Readable Discovery
+
+- [Sitemap](https://chethan-kumar-portfolio.vercel.app/sitemap.xml): XML sitemap covering indexable public routes and case studies.
+- [AI Catalog](https://chethan-kumar-portfolio.vercel.app/ai-catalog.json): Agentic Resource Discovery (ARD) JSON manifest of public portfolio endpoints.
+- [ARD Well-Known Manifest](https://chethan-kumar-portfolio.vercel.app/.well-known/ard.json): Standard well-known discovery endpoint.
