@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { execSync, spawn } from 'node:child_process';
 import { chromium } from '@playwright/test';
@@ -91,6 +92,23 @@ function runLighthouseCli(url, formFactor, debugPort) {
   });
 }
 
+async function waitForDevTools(port, chromeProc, getStderr, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (chromeProc.exitCode !== null) {
+      throw new Error(`Chrome exited prematurely (${chromeProc.exitCode}): ${getStderr()}`);
+    }
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/json/version`);
+      if (res.ok) return;
+    } catch {
+      // Retry until DevTools HTTP endpoint binds
+    }
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  throw new Error(`Timed out waiting for Chrome DevTools on port ${port}: ${getStderr()}`);
+}
+
 async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -102,20 +120,40 @@ async function main() {
   const commitSha = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
   const server = await startProductionPreviewServer(PORT);
 
-  const chromePath = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-  const executablePath = !process.env.CI && fs.existsSync(chromePath) ? chromePath : chromium.executablePath();
-  const debugPort = 9229;
+  const candidates = [
+    process.env.CHROME_PATH,
+    chromium.executablePath(),
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium',
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+  ].filter(Boolean);
+  const executablePath = candidates.find((p) => fs.existsSync(p));
+  if (!executablePath) {
+    throw new Error(`No Chrome/Chromium executable found. Checked: ${candidates.join(', ')}`);
+  }
 
-  const browser = await chromium.launch({
-    executablePath,
-    headless: true,
-    args: [
-      '--headless=new',
-      '--disable-extensions',
-      '--incognito',
-      '--no-sandbox',
-      `--remote-debugging-port=${debugPort}`
-    ]
+  const debugPort = Number(process.env.LH_CHROME_PORT || 9229);
+  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lh-chrome-'));
+  const chromeFlags = [
+    '--headless=new',
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu',
+    '--disable-extensions',
+    '--no-first-run',
+    '--no-default-browser-check',
+    `--user-data-dir=${userDataDir}`,
+    `--remote-debugging-port=${debugPort}`,
+    'about:blank'
+  ];
+
+  let chromeStderr = '';
+  const chromeProc = spawn(executablePath, chromeFlags, {
+    stdio: ['ignore', 'ignore', 'pipe']
+  });
+  chromeProc.stderr.on('data', (chunk) => {
+    chromeStderr += chunk.toString();
   });
 
   const report = {
@@ -126,12 +164,13 @@ async function main() {
     environment: {
       nodeVersion: process.version,
       executablePath,
-      chromeFlags: ['--headless=new', '--disable-extensions', '--incognito', '--no-sandbox']
+      chromeFlags: chromeFlags.filter((f) => !f.startsWith('--user-data-dir='))
     },
     routes: {}
   };
 
   try {
+    await waitForDevTools(debugPort, chromeProc, () => chromeStderr);
     for (const route of ROUTES) {
       report.routes[route] = {};
       for (const formFactor of ['desktop', 'mobile']) {
@@ -160,7 +199,20 @@ async function main() {
       }
     }
   } finally {
-    await browser.close();
+    if (chromeProc.exitCode === null) {
+      chromeProc.kill('SIGTERM');
+      await new Promise((resolve) => {
+        const t = setTimeout(() => {
+          if (chromeProc.exitCode === null) chromeProc.kill('SIGKILL');
+          resolve();
+        }, 3000);
+        chromeProc.once('exit', () => {
+          clearTimeout(t);
+          resolve();
+        });
+      });
+    }
+    fs.rmSync(userDataDir, { recursive: true, force: true });
     await new Promise((resolve) => server.close(resolve));
   }
 
