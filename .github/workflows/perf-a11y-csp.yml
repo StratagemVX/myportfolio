@@ -44,6 +44,11 @@ jobs:
           git diff --exit-code -- api/index.js "api/[...path].js"
 
       - name: Run test suite
+        env:
+          # Test-only values for post-PR #1 fail-closed startup validation compatibility
+          NODE_ENV: test
+          ADMIN_PASSWORD: ci-only-test-password-not-for-deployment-2026
+          SECURITY_HMAC_KEY: ci-only-test-key-never-use-in-deployment-32-bytes-minimum
         run: npm test
 
       - name: Audit full dependency tree (zero vulnerabilities required)
