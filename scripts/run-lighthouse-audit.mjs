@@ -8,12 +8,16 @@ const ROUTES = ['/', '/work', '/archive', '/evidence', '/contact', '/admin'];
 const RUNS_PER_ROUTE = Number(process.env.LH_RUNS || 3);
 const PORT = Number(process.env.LH_PORT || 4174);
 const OUT_DIR = path.resolve('.lighthouse-results');
+const MAX_ATTEMPTS = Number(process.env.LH_MAX_ATTEMPTS || 3);
 const CHROME_FLAGS = [
   '--headless=new',
   '--no-sandbox',
   '--disable-dev-shm-usage',
   '--disable-gpu',
   '--disable-extensions',
+  '--disable-background-networking',
+  '--disable-default-apps',
+  '--disable-sync',
   '--no-first-run',
   '--no-default-browser-check'
 ];
@@ -66,6 +70,7 @@ function runLighthouseCli(url, formFactor, chromePath, runner) {
       ...runner.prefixArgs,
       url,
       chromeFlagsArg,
+      '--max-wait-for-load=45000',
       '--output=json',
       '--output-path=stdout',
       '--quiet',
@@ -138,6 +143,24 @@ function runLighthouseCli(url, formFactor, chromePath, runner) {
   });
 }
 
+async function runLighthouseWithRetry(url, formFactor, chromePath, runner) {
+  let lastError;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      return await runLighthouseCli(url, formFactor, chromePath, runner);
+    } catch (err) {
+      lastError = err;
+      if (attempt < MAX_ATTEMPTS) {
+        console.warn(
+          `[LH retry ${attempt}/${MAX_ATTEMPTS - 1}] ${url} (${formFactor}) failed: ${err?.message || err}`
+        );
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+  }
+  throw lastError;
+}
+
 async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -150,6 +173,7 @@ async function main() {
   const executablePath = resolveChromeExecutable();
   const runner = resolveLighthouseRunner();
   const server = await startProductionPreviewServer(PORT);
+  const outFile = path.join(OUT_DIR, 'lighthouse-summary.json');
 
   const report = {
     generatedAtUtc: new Date().toISOString(),
@@ -170,7 +194,7 @@ async function main() {
       for (const formFactor of ['desktop', 'mobile']) {
         const runs = [];
         for (let i = 0; i < RUNS_PER_ROUTE; i++) {
-          const single = await runLighthouseCli(
+          const single = await runLighthouseWithRetry(
             `http://127.0.0.1:${PORT}${route}`,
             formFactor,
             executablePath,
@@ -196,13 +220,12 @@ async function main() {
           `[LH ${formFactor.padEnd(7)}] ${route.padEnd(10)} Perf:${m.performance} A11y:${m.accessibility} BP:${m.bestPractices} SEO:${m.seo} LCP:${m.lcpMs}ms CLS:${m.cls} TBT:${m.tbtMs}ms`
         );
       }
+      fs.writeFileSync(outFile, JSON.stringify(report, null, 2));
     }
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
 
-  const outFile = path.join(OUT_DIR, 'lighthouse-summary.json');
-  fs.writeFileSync(outFile, JSON.stringify(report, null, 2));
   console.log(`Saved Lighthouse report to ${outFile}`);
 }
 
