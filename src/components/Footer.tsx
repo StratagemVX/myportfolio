@@ -32,19 +32,19 @@ export default function Footer() {
             <p className="text-[#F0F0ED] font-sans font-medium text-sm">
               Chethan Kumar B S
             </p>
-            <p className="text-[11px] text-[#A4A8AE] leading-relaxed font-light">
+            <p className="text-xs text-[#A4A8AE] leading-relaxed font-light">
               Computer Science Engineer · AI & Intelligent Systems · Cybersecurity · Systems Engineering
             </p>
-            <p className="text-[10px] text-[#A8B8A7]/80">
+            <p className="text-xs text-[#A8B8A7]">
               Philosophy: "Security First. Intelligence Always."
             </p>
           </div>
 
           <div className="md:col-span-4 space-y-2">
-            <span className="text-[10px] font-mono tracking-wider text-[#A8B8A7] uppercase block font-medium">
+            <span className="text-xs font-mono tracking-wider text-[#A8B8A7] uppercase block font-medium">
               Page directory
             </span>
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[11px]">
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
               {footerNav.map((item) => (
                 <Link key={item.label} to={item.href} className="hover:text-[#F0F0ED] transition-colors">
                   {item.label}

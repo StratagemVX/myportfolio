@@ -362,7 +362,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
               <ArrowRight className="w-4 h-4" />
             </button>
 
-            <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between text-[11px] text-[#A4A8AE]">
+            <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between text-xs text-[#A4A8AE]">
               <span>Policy: Mandatory Multi-Factor Verification</span>
               <span className="text-[#A8B8A7]">Hardware MFA Enforced</span>
             </div>
@@ -434,9 +434,9 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
                     autoFocus
                     className="w-full bg-[#101114] border border-[rgba(255,255,255,0.08)] rounded p-3 text-center text-xl tracking-[0.3em] font-mono text-[#A8B8A7] focus:outline-none focus:border-[#A8B8A7]"
                   />
-                  <p className="text-[11px] text-[#A4A8AE] mt-1.5 flex flex-col gap-0.5">
+                  <p className="text-xs text-[#A4A8AE] mt-1.5 flex flex-col gap-0.5">
                     <span>Enter the 6-digit code from your authenticator application.</span>
-                    <span className="text-[#A4A8AE]/70 font-mono text-[10px]">
+                    <span className="text-[#9CA1AA] font-mono text-[11px]">
                       RFC 6238 TOTP verification with strict 30-second time synchronization.
                     </span>
                   </p>
@@ -538,7 +538,7 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
         )}
 
         {/* Security Architecture Footnote */}
-        <div className="p-4 bg-[#181A1F] border border-[rgba(255,255,255,0.06)] rounded text-[11px] text-[#A4A8AE]/80 space-y-1">
+        <div className="p-4 bg-[#181A1F] border border-[rgba(255,255,255,0.06)] rounded text-xs text-[#A4A8AE] space-y-1">
           <div className="flex items-center space-x-1.5 text-[#A8B8A7] font-semibold">
             <HelpCircle className="w-3.5 h-3.5" />
             <span>ENTERPRISE SECURITY SPECIFICATION</span>

@@ -164,14 +164,14 @@ export default function EvidencePage() {
                   <tr key={idx} className="hover:bg-[#181A1F]/60 transition-colors">
                     <td className="py-4 px-5 align-top">
                       <span className="text-[#F0F0ED] font-medium block text-sm font-sans mb-1">{item.domain}</span>
-                      <p className="text-[11px] text-[#A4A8AE] font-light max-w-sm leading-relaxed">{item.verifiedProof}</p>
+                      <p className="text-xs text-[#A4A8AE] font-light max-w-sm leading-relaxed">{item.verifiedProof}</p>
                     </td>
                     <td className="py-4 px-5 align-top">
                       <div className="flex flex-wrap gap-1 max-w-xs">
                         {item.technologies.map((t) => (
                           <span
                             key={t}
-                            className="px-2 py-0.5 rounded bg-[#1F2228] text-[10px] text-[#D4D6D2] border border-[rgba(255,255,255,0.05)]"
+                            className="px-2 py-0.5 rounded bg-[#1F2228] text-[11px] text-[#D4D6D2] border border-[rgba(255,255,255,0.05)]"
                           >
                             {t}
                           </span>
@@ -192,7 +192,7 @@ export default function EvidencePage() {
                         href={item.repoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center space-x-1 text-[#A4A8AE] hover:text-[#F0F0ED] text-[11px] px-2.5 py-1 rounded bg-[#181A1F] border border-[rgba(255,255,255,0.06)] hover:border-[#A8B8A7]/40 transition-colors"
+                        className="inline-flex items-center space-x-1 text-[#A4A8AE] hover:text-[#F0F0ED] text-xs px-2.5 py-1 rounded bg-[#181A1F] border border-[rgba(255,255,255,0.06)] hover:border-[#A8B8A7]/40 transition-colors"
                       >
                         <Github className="w-3.5 h-3.5" />
                         <span>Inspect code</span>

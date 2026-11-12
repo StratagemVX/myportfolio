@@ -239,6 +239,16 @@ const routes = [
         ])
       ]
     }
+  },
+  {
+    path: '/admin',
+    title: 'Admin Session Required | Chethan Kumar',
+    description: 'Private owner security control room. Authentication required.',
+    canonical: `${SITE_URL}/admin`,
+    robots: 'noindex, nofollow',
+    ogType: 'website',
+    ogImage: DEFAULT_OG_IMAGE,
+    ogImageAlt: 'Private Admin Perimeter'
   }
 ];
 
@@ -281,8 +291,42 @@ for (const project of projectsData.projects) {
   });
 }
 
+// Inline the compiled stylesheet to eliminate render-blocking CSS round-trips on initial paint
+const assetFiles = fs.existsSync(path.join(DIST_DIR, 'assets'))
+  ? fs.readdirSync(path.join(DIST_DIR, 'assets'))
+  : [];
+
+let inlinedTemplate = template.replace(
+  /<link\s+rel="stylesheet"\s+[^>]*href="\/assets\/([^"]+\.css)"[^>]*>/,
+  (match, cssFilename) => {
+    const cssPath = path.join(DIST_DIR, 'assets', cssFilename);
+    if (!fs.existsSync(cssPath)) return match;
+    const cssText = fs.readFileSync(cssPath, 'utf-8');
+    return `<style>\n${cssText}\n    </style>`;
+  }
+);
+
+function resolveChunkPreload(routePath) {
+  const prefixMap = [
+    ['/work', 'WorkPage-'],
+    ['/evidence', 'EvidencePage-'],
+    ['/archive', 'ArchivePage-'],
+    ['/recruiter-brief', 'RecruiterBriefPage-'],
+    ['/academics', 'AcademicsPage-'],
+    ['/contact', 'ContactPage-'],
+    ['/resume', 'ResumePage-'],
+    ['/admin', 'AdminDashboardPage-']
+  ];
+  const matchedPrefix =
+    prefixMap.find(([p]) => routePath === p)?.[1] ||
+    (routePath.startsWith('/project/') ? 'ProjectDetailPage-' : null);
+  if (!matchedPrefix) return null;
+  const chunk = assetFiles.find((f) => f.startsWith(matchedPrefix) && f.endsWith('.js'));
+  return chunk ? `/assets/${chunk}` : null;
+}
+
 function renderHtmlForRoute(route) {
-  let html = template;
+  let html = inlinedTemplate;
 
   // Replace Title
   html = html.replace(/<title>.*?<\/title>/s, `<title>${route.title}</title>`);
@@ -325,6 +369,15 @@ function renderHtmlForRoute(route) {
     html = html.replace(
       /<script type="application\/ld\+json">.*?<\/script>/s,
       `<script type="application/ld+json">\n${jsonLdString}\n    </script>`
+    );
+  }
+
+  // Inject route-specific modulepreload so lazy secondary chunks fetch in parallel with boot
+  const routeChunk = resolveChunkPreload(route.path);
+  if (routeChunk) {
+    html = html.replace(
+      '</head>',
+      `    <link rel="modulepreload" crossorigin href="${routeChunk}">\n  </head>`
     );
   }
 

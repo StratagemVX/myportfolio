@@ -162,7 +162,7 @@ export default function ContactPage() {
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="Ada Lovelace"
-                        className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#A4A8AE]/40 focus:outline-none focus:border-[#A8B8A7]/70 transition-colors"
+                        className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#9CA1AA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8B8A7] focus:border-[#A8B8A7] transition-colors"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -174,7 +174,7 @@ export default function ContactPage() {
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         placeholder="ada@example.com"
-                        className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#A4A8AE]/40 focus:outline-none focus:border-[#A8B8A7]/70 transition-colors"
+                        className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#9CA1AA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8B8A7] focus:border-[#A8B8A7] transition-colors"
                       />
                     </div>
                   </div>
@@ -187,7 +187,7 @@ export default function ContactPage() {
                       value={formData.subject}
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                       placeholder="Engineering Role / Project Discussion / Systems Collaboration"
-                      className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#A4A8AE]/40 focus:outline-none focus:border-[#A8B8A7]/70 transition-colors"
+                      className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#9CA1AA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8B8A7] focus:border-[#A8B8A7] transition-colors"
                     />
                   </div>
 
@@ -200,7 +200,7 @@ export default function ContactPage() {
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       placeholder="Briefly describe your team, opportunity, or technical inquiry..."
-                      className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#A4A8AE]/40 focus:outline-none focus:border-[#A8B8A7]/70 transition-colors resize-none font-sans text-xs"
+                      className="w-full bg-[#14161A] border border-[rgba(255,255,255,0.08)] rounded-lg p-3 text-[#F0F0ED] placeholder-[#9CA1AA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8B8A7] focus:border-[#A8B8A7] transition-colors resize-none font-sans text-xs"
                     />
                   </div>
 

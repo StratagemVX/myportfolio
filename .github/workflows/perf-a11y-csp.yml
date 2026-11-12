@@ -46,8 +46,11 @@ jobs:
       - name: Run test suite
         run: npm test
 
-      - name: Audit production dependencies (high+)
-        run: npm audit --omit=dev --audit-level=high
+      - name: Audit full dependency tree (zero vulnerabilities required)
+        run: npm audit
+
+      - name: Audit production dependencies (zero vulnerabilities required)
+        run: npm audit --omit=dev
 
       - name: Validate CSP configuration
         run: |
@@ -107,3 +110,26 @@ jobs:
           }
           console.log('AI discovery manifest validation passed.');
           NODE
+
+      - name: Install Playwright Chromium browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright browser, CSP, Trusted Types & WCAG 2.2 AA (axe-core) tests
+        run: npm run test:e2e
+
+      - name: Run reproducible Lighthouse performance & Core Web Vitals audit
+        env:
+          LH_RUNS: '3'
+        run: |
+          npx --yes lighthouse --version
+          npm run lighthouse:audit
+
+      - name: Upload Playwright & Lighthouse verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-a11y-csp-verification-reports
+          path: |
+            playwright-report/
+            .lighthouse-results/
+          retention-days: 30

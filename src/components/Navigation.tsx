@@ -107,8 +107,9 @@ export default function Navigation() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="lg:hidden p-2 text-[#A4A8AE] hover:text-[#F0F0ED] focus:outline-none"
+          className="lg:hidden p-2 text-[#A4A8AE] hover:text-[#F0F0ED] rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#A8B8A7]"
           aria-label="Toggle navigation menu"
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { 
   RefreshCw, 
   Key, 
@@ -10,13 +10,14 @@ import {
 } from 'lucide-react';
 import projectsData from '../data/projects.json';
 import SecurityGate from '../components/admin/SecurityGate';
-import AccountSecuritySection from '../components/admin/AccountSecuritySection';
-import PrivateRecruiterAccessSection from '../components/admin/PrivateRecruiterAccessSection';
-import IntegrationMatrixSection from '../components/admin/IntegrationMatrixSection';
 import { apiClient } from '../services/apiClient';
 import type { OwnerSecurityProfile } from '../../server/types';
 import SEOHead from '../components/SEOHead';
 import { STATIC_ROUTES_SEO } from '../data/seoConfig';
+
+const AccountSecuritySection = lazy(() => import('../components/admin/AccountSecuritySection'));
+const PrivateRecruiterAccessSection = lazy(() => import('../components/admin/PrivateRecruiterAccessSection'));
+const IntegrationMatrixSection = lazy(() => import('../components/admin/IntegrationMatrixSection'));
 
 type AdminView = 'CONSOLE' | 'SECURITY' | 'RECRUITER' | 'INTEGRATIONS';
 
@@ -69,10 +70,23 @@ export default function AdminDashboardPage() {
 
   if (isVerifyingSession) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] py-32 text-center font-mono text-xs text-[#A4A8AE] site-container flex flex-col items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#A8B8A7]/20 border-t-[#A8B8A7] rounded-full animate-spin mx-auto mb-4" />
-        <p className="tracking-wider uppercase text-[11px] text-[#A8B8A7]">Verifying Owner Session...</p>
-      </div>
+      <>
+        <SEOHead {...STATIC_ROUTES_SEO['/admin']} />
+        <div className="min-h-[calc(100vh-4rem)] py-20 px-4 flex flex-col items-center justify-center font-mono text-xs text-[#A4A8AE]">
+          <div className="w-full max-w-lg bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-xl p-8 sm:p-10 shadow-2xl space-y-4 text-center">
+            <h1 className="font-display text-2xl font-normal text-[#F0F0ED]">
+              Admin Session Required
+            </h1>
+            <p className="text-sm text-[#A4A8AE] font-sans font-light">
+              Owner authentication protected by multi-factor verification (WebAuthn/FIDO2 &amp; RFC 6238 TOTP) before granting control room access.
+            </p>
+            <div className="pt-2 flex items-center justify-center space-x-2 text-xs text-[#A8B8A7]" role="status" aria-live="polite">
+              <div className="w-4 h-4 border-2 border-[#A8B8A7]/20 border-t-[#A8B8A7] rounded-full animate-spin" />
+              <span className="tracking-wider uppercase">Verifying Owner Session...</span>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -99,7 +113,7 @@ export default function AdminDashboardPage() {
             <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#F0F0ED] mt-1">
               Chethan Kumar · Security Control Room
             </h1>
-            <p className="text-[11px] text-[#A4A8AE] font-sans font-light mt-0.5">
+            <p className="text-xs text-[#A4A8AE] font-sans font-light mt-0.5">
               Verified Account: <strong className="text-[#F0F0ED]">{profile?.loginEmailMasked || 't***@g***.com'}</strong> · MFA Enforced
             </p>
           </div>
@@ -166,21 +180,27 @@ export default function AdminDashboardPage() {
 
         {/* VIEW 1: ACCOUNT & SECURITY */}
         {currentView === 'SECURITY' && profile && (
-          <AccountSecuritySection 
-            initialProfile={profile} 
-            onProfileUpdated={(updated) => setProfile(updated)} 
-            onSessionExpired={() => setIsAuthenticated(false)}
-          />
+          <Suspense fallback={<div className="p-8 text-xs font-mono text-[#A4A8AE]">Loading security controls...</div>}>
+            <AccountSecuritySection
+              initialProfile={profile}
+              onProfileUpdated={(updated) => setProfile(updated)}
+              onSessionExpired={() => setIsAuthenticated(false)}
+            />
+          </Suspense>
         )}
 
         {/* VIEW 2: PRIVATE RECRUITER ACCESS */}
         {currentView === 'RECRUITER' && (
-          <PrivateRecruiterAccessSection />
+          <Suspense fallback={<div className="p-8 text-xs font-mono text-[#A4A8AE]">Loading recruiter access controls...</div>}>
+            <PrivateRecruiterAccessSection />
+          </Suspense>
         )}
 
         {/* VIEW 3: INTEGRATION MATRIX */}
         {currentView === 'INTEGRATIONS' && (
-          <IntegrationMatrixSection />
+          <Suspense fallback={<div className="p-8 text-xs font-mono text-[#A4A8AE]">Loading integration matrix...</div>}>
+            <IntegrationMatrixSection />
+          </Suspense>
         )}
 
         {/* VIEW 4: SYSTEM CONSOLE (GitHub Sync & Metrics) */}
@@ -189,21 +209,21 @@ export default function AdminDashboardPage() {
             {/* Metrics Row (Wide 4-Column Layout) */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] p-6 rounded-lg">
-                <span className="text-[10px] text-[#A4A8AE]">INDEXED REPOSITORIES</span>
+                <span className="text-xs text-[#A4A8AE]">INDEXED REPOSITORIES</span>
                 <p className="font-display text-2xl text-[#F0F0ED] mt-1">{projectsData.repositoryCount}</p>
               </div>
               <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] p-6 rounded-lg">
-                <span className="text-[10px] text-[#A4A8AE]">FEATURED CASE STUDIES</span>
+                <span className="text-xs text-[#A4A8AE]">FEATURED CASE STUDIES</span>
                 <p className="font-display text-2xl text-[#A8B8A7] mt-1">
                   {projectsData.projects.filter(p => p.isFeatured).length}
                 </p>
               </div>
               <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] p-6 rounded-lg">
-                <span className="text-[10px] text-[#A4A8AE]">MFA SECURITY STATUS</span>
+                <span className="text-xs text-[#A4A8AE]">MFA SECURITY STATUS</span>
                 <p className="font-display text-2xl text-[#A8B8A7] mt-1">MANDATORY</p>
               </div>
               <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] p-6 rounded-lg">
-                <span className="text-[10px] text-[#A4A8AE]">SYSTEM HEALTH</span>
+                <span className="text-xs text-[#A4A8AE]">SYSTEM HEALTH</span>
                 <p className="font-display text-2xl text-[#A8B8A7] mt-1">Nominal</p>
               </div>
             </div>
@@ -216,7 +236,7 @@ export default function AdminDashboardPage() {
                     <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                     <h2 className="font-display text-base font-medium text-[#F0F0ED]">GitHub Synchronization Engine</h2>
                   </div>
-                  <p className="text-[11px] text-[#A4A8AE] mt-1">
+                  <p className="text-xs text-[#A4A8AE] mt-1">
                     Source of Truth: <code className="text-[#A8B8A7]">https://github.com/StratagemVX</code> · 
                     Last Automated Sync: {new Date(projectsData.lastSyncedAt).toLocaleString()}
                   </p>
@@ -232,14 +252,14 @@ export default function AdminDashboardPage() {
               </div>
 
               {syncFeedback && (
-                <div className="p-3 bg-[#101114] border border-[#A8B8A7]/40 rounded text-[11px] text-[#A8B8A7]">
+                <div className="p-3 bg-[#101114] border border-[#A8B8A7]/40 rounded text-xs text-[#A8B8A7]">
                   {syncFeedback}
                 </div>
               )}
             </div>
 
             {/* Quick Status Bar */}
-            <div className="p-4 bg-[#181A1F] border border-[rgba(255,255,255,0.06)] rounded-lg flex items-center justify-between text-[11px] text-[#A4A8AE]">
+            <div className="p-4 bg-[#181A1F] border border-[rgba(255,255,255,0.06)] rounded-lg flex items-center justify-between text-xs text-[#A4A8AE]">
               <span>Active Architecture: Auth0 PKCE + RFC 6238 TOTP + W3C WebAuthn Level 3</span>
               <button
                 onClick={() => setCurrentView('SECURITY')}
