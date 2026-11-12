@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execSync, spawn } from 'node:child_process';
 import { chromium } from '@playwright/test';
@@ -9,6 +8,15 @@ const ROUTES = ['/', '/work', '/archive', '/evidence', '/contact', '/admin'];
 const RUNS_PER_ROUTE = Number(process.env.LH_RUNS || 3);
 const PORT = Number(process.env.LH_PORT || 4174);
 const OUT_DIR = path.resolve('.lighthouse-results');
+const CHROME_FLAGS = [
+  '--headless=new',
+  '--no-sandbox',
+  '--disable-dev-shm-usage',
+  '--disable-gpu',
+  '--disable-extensions',
+  '--no-first-run',
+  '--no-default-browser-check'
+];
 
 function median(values) {
   const sorted = [...values].sort((a, b) => a - b);
@@ -22,13 +30,42 @@ function round(val, decimals = 3) {
   return Math.round(val * factor) / factor;
 }
 
-function runLighthouseCli(url, formFactor, debugPort) {
+function resolveChromeExecutable() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    '/usr/bin/google-chrome',
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    chromium.executablePath()
+  ].filter(Boolean);
+
+  const found = candidates.find((p) => fs.existsSync(p));
+  if (!found) {
+    throw new Error(`No Chrome/Chromium executable found. Checked: ${candidates.join(', ')}`);
+  }
+  return found;
+}
+
+function resolveLighthouseRunner() {
+  try {
+    execSync('lighthouse --version', { stdio: 'ignore' });
+    return { cmd: 'lighthouse', prefixArgs: [] };
+  } catch {
+    return { cmd: 'npx', prefixArgs: ['--yes', 'lighthouse@12.8.2'] };
+  }
+}
+
+function runLighthouseCli(url, formFactor, chromePath, runner) {
   return new Promise((resolve, reject) => {
+    const joinedFlags = CHROME_FLAGS.join(' ');
+    const chromeFlagsArg =
+      process.platform === 'win32' ? `--chrome-flags="${joinedFlags}"` : `--chrome-flags=${joinedFlags}`;
     const args = [
-      '--yes',
-      'lighthouse',
+      ...runner.prefixArgs,
       url,
-      `--port=${debugPort}`,
+      chromeFlagsArg,
       '--output=json',
       '--output-path=stdout',
       '--quiet',
@@ -38,8 +75,9 @@ function runLighthouseCli(url, formFactor, debugPort) {
       args.push('--preset=desktop');
     }
 
-    const child = spawn('npx', args, {
+    const child = spawn(runner.cmd, args, {
       shell: process.platform === 'win32',
+      env: { ...process.env, CHROME_PATH: chromePath },
       stdio: ['ignore', 'pipe', 'pipe']
     });
 
@@ -59,6 +97,14 @@ function runLighthouseCli(url, formFactor, debugPort) {
       try {
         const jsonStart = stdout.indexOf('{');
         const lhr = JSON.parse(stdout.slice(jsonStart));
+        if (lhr.runtimeError) {
+          reject(
+            new Error(
+              `Lighthouse runtimeError on ${url} (${formFactor}): ${lhr.runtimeError.code} - ${lhr.runtimeError.message}`
+            )
+          );
+          return;
+        }
         const a11yAuditIds = new Set(
           (lhr.categories?.accessibility?.auditRefs || [])
             .filter((r) => r.weight > 0)
@@ -92,23 +138,6 @@ function runLighthouseCli(url, formFactor, debugPort) {
   });
 }
 
-async function waitForDevTools(port, chromeProc, getStderr, timeoutMs = 15000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (chromeProc.exitCode !== null) {
-      throw new Error(`Chrome exited prematurely (${chromeProc.exitCode}): ${getStderr()}`);
-    }
-    try {
-      const res = await fetch(`http://127.0.0.1:${port}/json/version`);
-      if (res.ok) return;
-    } catch {
-      // Retry until DevTools HTTP endpoint binds
-    }
-    await new Promise((r) => setTimeout(r, 150));
-  }
-  throw new Error(`Timed out waiting for Chrome DevTools on port ${port}: ${getStderr()}`);
-}
-
 async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -118,43 +147,9 @@ async function main() {
     'lighthouse-only-test-hmac-key-never-use-in-prod-32bytes';
 
   const commitSha = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+  const executablePath = resolveChromeExecutable();
+  const runner = resolveLighthouseRunner();
   const server = await startProductionPreviewServer(PORT);
-
-  const candidates = [
-    process.env.CHROME_PATH,
-    chromium.executablePath(),
-    '/usr/bin/google-chrome',
-    '/usr/bin/chromium',
-    'C:/Program Files/Google/Chrome/Application/chrome.exe',
-    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
-  ].filter(Boolean);
-  const executablePath = candidates.find((p) => fs.existsSync(p));
-  if (!executablePath) {
-    throw new Error(`No Chrome/Chromium executable found. Checked: ${candidates.join(', ')}`);
-  }
-
-  const debugPort = Number(process.env.LH_CHROME_PORT || 9229);
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lh-chrome-'));
-  const chromeFlags = [
-    '--headless=new',
-    '--no-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-gpu',
-    '--disable-extensions',
-    '--no-first-run',
-    '--no-default-browser-check',
-    `--user-data-dir=${userDataDir}`,
-    `--remote-debugging-port=${debugPort}`,
-    'about:blank'
-  ];
-
-  let chromeStderr = '';
-  const chromeProc = spawn(executablePath, chromeFlags, {
-    stdio: ['ignore', 'ignore', 'pipe']
-  });
-  chromeProc.stderr.on('data', (chunk) => {
-    chromeStderr += chunk.toString();
-  });
 
   const report = {
     generatedAtUtc: new Date().toISOString(),
@@ -164,19 +159,23 @@ async function main() {
     environment: {
       nodeVersion: process.version,
       executablePath,
-      chromeFlags: chromeFlags.filter((f) => !f.startsWith('--user-data-dir='))
+      chromeFlags: CHROME_FLAGS
     },
     routes: {}
   };
 
   try {
-    await waitForDevTools(debugPort, chromeProc, () => chromeStderr);
     for (const route of ROUTES) {
       report.routes[route] = {};
       for (const formFactor of ['desktop', 'mobile']) {
         const runs = [];
         for (let i = 0; i < RUNS_PER_ROUTE; i++) {
-          const single = await runLighthouseCli(`http://127.0.0.1:${PORT}${route}`, formFactor, debugPort);
+          const single = await runLighthouseCli(
+            `http://127.0.0.1:${PORT}${route}`,
+            formFactor,
+            executablePath,
+            runner
+          );
           runs.push(single);
         }
 
@@ -199,20 +198,6 @@ async function main() {
       }
     }
   } finally {
-    if (chromeProc.exitCode === null) {
-      chromeProc.kill('SIGTERM');
-      await new Promise((resolve) => {
-        const t = setTimeout(() => {
-          if (chromeProc.exitCode === null) chromeProc.kill('SIGKILL');
-          resolve();
-        }, 3000);
-        chromeProc.once('exit', () => {
-          clearTimeout(t);
-          resolve();
-        });
-      });
-    }
-    fs.rmSync(userDataDir, { recursive: true, force: true });
     await new Promise((resolve) => server.close(resolve));
   }
 
@@ -222,6 +207,8 @@ async function main() {
 }
 
 main().catch((err) => {
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  fs.writeFileSync(path.join(OUT_DIR, 'lighthouse-error.txt'), String(err?.stack || err));
   console.error(err);
   process.exit(1);
 });
