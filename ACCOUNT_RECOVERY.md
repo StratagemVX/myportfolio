@@ -4,7 +4,7 @@
 
 1. **Zero Unauthenticated Backdoors:** There is no master password, bypass query parameter, or client-side toggle that circumvents administrative authentication.
 2. **Mandatory MFA Continuity:** Resetting a password never disables or skips multi-factor authentication. Subsequent sign-ins strictly require an enrolled factor (TOTP or Passkey) or an emergency recovery code.
-3. **Out-of-Band Channel Separation:** Recovery communications are directed exclusively to the verified security recovery email: `the.suryaputraa@gmail.com`.
+3. **Out-of-Band Channel Separation:** Recovery communications are directed exclusively to the verified security recovery email: `owner@example.com`.
 
 ---
 
@@ -13,7 +13,7 @@
 ### Scenario A: Forgotten Administrator Passphrase
 1. Navigate to the **Administrator Security Gate** at `/admin`.
 2. Click **Forgot Passphrase?**.
-3. Submit the verified account email (`the.suryaputraa@gmail.com`).
+3. Submit the verified account email (`owner@example.com`).
 4. The server dispatches an Auth0 password-reset notification with anti-enumeration protection.
 5. Follow the single-use expiring reset link to establish a new password.
 6. Return to `/admin` and sign in. Complete the mandatory secondary MFA challenge (Authenticator app or Passkey).
@@ -24,7 +24,7 @@
 1. At the **Multi-Factor Challenge** screen, switch to the **Backup Code** tab.
 2. Enter one of your 10 single-use emergency recovery codes (`XXXX-XXXX-XXXX-XXXX`).
 3. The server computes the SHA-256 hash of the entered code, verifies it against the active hashed table, and permanently marks that code as consumed.
-4. A critical security alert is dispatched immediately to `the.suryaputraa@gmail.com` and SMS `+919380469287`.
+4. A critical security alert is dispatched immediately to `owner@example.com` and SMS `+15550000000`.
 5. Once inside **Account & Security -> Authenticator Apps**:
    - Re-enroll a new authenticator application by scanning the fresh QR code.
    - Navigate to **Recovery Methods** and select **Regenerate 10 Recovery Codes** to invalidate previous backup codes and refresh your offline reserve.
@@ -46,9 +46,9 @@ If all enrolled factors and offline recovery codes have been destroyed:
 1. **Auth0 Tenant Direct Intervention:**
    - Log into the [Auth0 Management Dashboard](https://manage.auth0.com) using your root tenant credentials and separate identity provider MFA.
    - Navigate to **User Management -> Users**.
-   - Locate user `the.suryaputraa@gmail.com`.
+   - Locate user `owner@example.com`.
    - Access **Multi-Factor Authentication** tab and trigger **Reset Multi-Factor Authentication**.
-   - Auth0 will send a secure identity re-enrollment invitation to `the.suryaputraa@gmail.com`.
+   - Auth0 will send a secure identity re-enrollment invitation to `owner@example.com`.
 2. **Re-enrollment Protocol:**
    - Sign into the portfolio with your primary credentials.
    - The platform will prompt an immediate, mandatory MFA enrollment sequence.

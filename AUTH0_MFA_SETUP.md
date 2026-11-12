@@ -55,10 +55,10 @@ The owner account requires a verified email matching the server-side configurati
 1. Go to **User Management** > **Users**.
 2. Locate or create the primary owner account.
 3. Verify that the user's email address is:
-   `the.suryaputraa@gmail.com`
+   `owner@example.com`
 4. Toggle **Email Verified** to **true** (or dispatch the verification email and click the confirmation link).
 5. If the account currently uses a different email address:
-   - Update the email to `the.suryaputraa@gmail.com`.
+   - Update the email to `owner@example.com`.
    - Send the verification email to confirm ownership before activating password reset.
    - Never use an unverified email for administrative access.
 

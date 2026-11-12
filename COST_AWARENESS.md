@@ -36,7 +36,7 @@ This document provides transparent cost, quota, and trial constraint analysis fo
 
 ### 2.2 Twilio Unified Communications (Trial Constraints)
 - **Developer Trial Account Rules**:
-  - Outbound SMS can only be sent to **verified caller ID numbers** (e.g. `+919380469287`).
+  - Outbound SMS can only be sent to **verified caller ID numbers** (e.g. `+15550000000`).
   - Outbound SMS messages are automatically prepended by Twilio with: `"Sent from your Twilio trial account - "`.
   - WhatsApp messages require the recipient phone to join the Twilio sandbox by sending `join <sandbox-keyword>` to `+14155238886`.
   - Comms Email requires either domain DNS verification or sending through verified sender identities.

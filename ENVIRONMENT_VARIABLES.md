@@ -29,9 +29,9 @@ These variables are consumed exclusively by the backend API runtime (`/api/*`) a
 | Variable Name | Channel | Configured Destination | Client Masking |
 | :--- | :--- | :--- | :--- |
 | `TWILIO_ACCOUNT_EMAIL` | Twilio Account | `karnashaiva81@gmail.com` | `k***@g***.com` |
-| `OWNER_ALERT_EMAIL` | Email Alert Target | `the.suryaputraa@gmail.com` | `t***@g***.com` |
-| `OWNER_ALERT_PHONE_E164` | SMS Alert Target | `+919380469287` | `+91 93804 •••••` |
-| `OWNER_WHATSAPP_PHONE_E164` | WhatsApp Alert Target | `+919380469287` | `+91 93804 •••••` |
+| `OWNER_ALERT_EMAIL` | Email Alert Target | `owner@example.com` | `o***@e***.com` |
+| `OWNER_ALERT_PHONE_E164` | SMS Alert Target | `+15550000000` | `+1 555 ••••••` |
+| `OWNER_WHATSAPP_PHONE_E164` | WhatsApp Alert Target | `+15550000000` | `+1 555 ••••••` |
 
 ---
 
@@ -52,8 +52,8 @@ These variables are consumed exclusively by the backend API runtime (`/api/*`) a
 | `SMS_PROVIDER` | Optional | `twilio` | Active SMS provider |
 | `TWILIO_FROM_NUMBER` | **Required** | `+1xxxxxxxxxx` | SMS-capable virtual phone number allocated in Twilio |
 | `TWILIO_MESSAGING_SERVICE_SID` | Optional | `MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` | Twilio Messaging Service SID (Alternative sender) |
-| `OWNER_ALERT_PHONE_E164` | **Required** | `+919380469287` | Destination mobile in E.164 format |
-| `TWILIO_VERIFIED_RECIPIENT_PHONE` | Optional | `+919380469287` | Confirms recipient is verified in Twilio Console |
+| `OWNER_ALERT_PHONE_E164` | **Required** | `+15550000000` | Destination mobile in E.164 format |
+| `TWILIO_VERIFIED_RECIPIENT_PHONE` | Optional | `+15550000000` | Confirms recipient is verified in Twilio Console |
 | `PHONE_OWNERSHIP_VERIFIED` | Optional | `true` | Set to `true` once OTP is confirmed |
 | `TWILIO_SMS_STATUS_CALLBACK_URL` | Optional | `http://localhost:3000/api/webhooks/twilio/sms` | Webhook URL for SMS delivery status callbacks |
 
@@ -64,7 +64,7 @@ These variables are consumed exclusively by the backend API runtime (`/api/*`) a
 | :--- | :---: | :--- | :--- |
 | `EMAIL_PROVIDER` | Optional | `twilio` | Active email provider selector |
 | `TWILIO_EMAIL_FROM_ADDRESS` | **Required** | `security@chethankumar.dev` | Authorized sender email address |
-| `OWNER_ALERT_EMAIL` | **Required** | `the.suryaputraa@gmail.com` | Destination inbox for security alerts |
+| `OWNER_ALERT_EMAIL` | **Required** | `owner@example.com` | Destination inbox for security alerts |
 | `TWILIO_EMAIL_API_BASE_URL` | Optional | `https://comms.twilio.com/v1/Emails` | Twilio Comms Email REST endpoint |
 | `TWILIO_EMAIL_WEBHOOK_URL` | Optional | `http://localhost:3000/api/webhooks/twilio/email` | Webhook URL for email event delivery receipts |
 | `TWILIO_EMAIL_DOMAIN_VERIFIED` | Optional | `true` / `false` | Indicates whether custom domain DNS is verified |
@@ -76,7 +76,7 @@ These variables are consumed exclusively by the backend API runtime (`/api/*`) a
 | :--- | :---: | :--- | :--- |
 | `WHATSAPP_PROVIDER` | Optional | `twilio` | Consolidated WhatsApp provider |
 | `TWILIO_WHATSAPP_FROM` | **Required** | `whatsapp:+14155238886` | Twilio WhatsApp Sandbox number or approved Sender |
-| `OWNER_WHATSAPP_PHONE_E164` | **Required** | `+919380469287` | Destination WhatsApp number in E.164 format |
+| `OWNER_WHATSAPP_PHONE_E164` | **Required** | `+15550000000` | Destination WhatsApp number in E.164 format |
 | `TWILIO_WHATSAPP_SANDBOX_JOINED` | Optional | `true` / `false` | Confirms recipient texted `join <keyword>` to Sandbox |
 | `TWILIO_WHATSAPP_STATUS_CALLBACK_URL` | Optional | `http://localhost:3000/api/webhooks/twilio/whatsapp` | Webhook URL for WhatsApp delivery receipts |
 
@@ -92,12 +92,12 @@ TWILIO_API_KEY_SECRET=
 # SMS
 TWILIO_FROM_NUMBER=
 TWILIO_MESSAGING_SERVICE_SID=
-OWNER_ALERT_PHONE_E164=+919380469287
+OWNER_ALERT_PHONE_E164=+15550000000
 TWILIO_SMS_STATUS_CALLBACK_URL=http://localhost:3000/api/webhooks/twilio/sms
 
 # EMAIL
 TWILIO_EMAIL_FROM_ADDRESS=security@chethankumar.dev
-OWNER_ALERT_EMAIL=the.suryaputraa@gmail.com
+OWNER_ALERT_EMAIL=owner@example.com
 TWILIO_EMAIL_API_BASE_URL=https://comms.twilio.com/v1/Emails
 
 # EMAIL STATUS
@@ -105,6 +105,6 @@ TWILIO_EMAIL_WEBHOOK_URL=http://localhost:3000/api/webhooks/twilio/email
 
 # WHATSAPP
 TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
-OWNER_WHATSAPP_PHONE_E164=+919380469287
+OWNER_WHATSAPP_PHONE_E164=+15550000000
 TWILIO_WHATSAPP_STATUS_CALLBACK_URL=http://localhost:3000/api/webhooks/twilio/whatsapp
 ```

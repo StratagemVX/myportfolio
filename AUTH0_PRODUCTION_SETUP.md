@@ -32,7 +32,7 @@ In Auth0 under **Security** → **Multi-factor Auth**:
 ## 3. Account Linking & Security Gate Synchronization
 
 The application's backend (`server/apiHandler.ts`) automatically validates the incoming Auth0 user identity against authorized owner emails:
-- `the.suryaputraa@gmail.com`
+- `owner@example.com`
 - `karnashaiva81@gmail.com`
 
 Any other Auth0 identity that logs in is rejected with HTTP 403 Forbidden:

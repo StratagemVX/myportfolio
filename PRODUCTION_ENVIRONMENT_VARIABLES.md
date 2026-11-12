@@ -1,62 +1,94 @@
-# Production Environment Variables Inventory: Chethan Kumar B S Engineering Portfolio
+# Production Environment Variables Inventory: Chethan Kumar Engineering Portfolio
 
-This document provides a complete inventory of all production environment variables, their security scopes, which platform hosts them, and their purpose.
+This document provides an accurate inventory of all environment variables read by the frontend and backend runtime, their security scopes, hosting platform, and distinction between local development vs. production secrets.
 
 > [!IMPORTANT]
-> Never commit actual credentials to Git or public repositories. Only `.env.example` should be tracked in source control.
+> Never commit populated `.env` files, personal phone numbers, personal emails, private infrastructure subdomains, tokens, or secrets into Git. Keep `.env.example` placeholder-only and configure production values exclusively in encrypted hosting secret managers (Vercel / Railway / GitHub Secrets).
 
 ---
 
-## 1. Frontend Environment Variables (Vercel)
+## 1. Local Development vs. Production Secrets
 
-These variables are public to the client browser and are prefixed with `VITE_`. They must **NEVER** contain API secrets or private keys.
+| Aspect | Local Development (`.env.local` / `.env`) | Production (`NODE_ENV=production`) |
+|---|---|---|
+| **Secrets (`ADMIN_PASSWORD`, `SECURITY_HMAC_KEY`)** | Non-sensitive development values for local testing (`tests/` & local server) | **Mandatory & fail-closed.** Must pass strength & placeholder validation (`ADMIN_PASSWORD` >= 16 chars, `SECURITY_HMAC_KEY` >= 32 bytes; example/placeholder strings are rejected). |
+| **CORS (`CORS_ALLOWED_ORIGINS`)** | `http://localhost:5173,http://localhost:3000` | Explicit comma-separated HTTPS origin allowlist (`https://chethan-kumar-portfolio.vercel.app,...`). Unlisted origins are rejected fail-closed. |
+| **Persistence** | Local JSON fallback (`server/security-state.json`, `server/notifications-log.json` or custom `STATE_FILE_PATH`) | Firebase Firestore Admin SDK (`FIREBASE_*`) recommended for ephemeral serverless runtimes. |
 
-| Variable | Platform | Example Value | Description |
+Generate strong production secrets before deployment:
+
+```bash
+openssl rand -hex 32   # SECURITY_HMAC_KEY (>= 64 hex chars / 32 random bytes)
+openssl rand -base64 24 # ADMIN_PASSWORD (>= 16 chars)
+```
+
+---
+
+## 2. Frontend Build Variables (Vercel — Public to Browser)
+
+Variables prefixed with `VITE_` are compiled into static browser bundles and must **never** hold secrets.
+
+| Variable | Platform | Example Value | Purpose |
 | :--- | :--- | :--- | :--- |
-| `VITE_API_BASE_URL` | Vercel | `https://backend-api-production-c798.up.railway.app` | Base URL for Railway backend REST endpoints |
-| `VITE_AUTH0_DOMAIN` | Vercel | `dev-xxxx.us.auth0.com` | Auth0 Universal Login tenant domain |
-| `VITE_AUTH0_CLIENT_ID`| Vercel | `your_auth0_spa_client_id` | Public SPA Client ID for Auth0 React SDK |
-| `VITE_FIREBASE_API_KEY`| Vercel | `AIzaSy...` | Firebase Web Client API Key |
-| `VITE_FIREBASE_PROJECT_ID`| Vercel | `chethan-portfolio` | Google Cloud / Firebase Project ID |
-| `VITE_FIREBASE_APP_ID`| Vercel | `1:123456:web:...` | Firebase Web Application ID |
+| `VITE_API_BASE_URL` | Vercel (optional) | `https://your-backend.example.com` | Optional API origin when frontend is hosted separately from API; omit when using same-origin `/api/*` routing. |
+| `VITE_AUTH0_DOMAIN` | Vercel | `your-tenant.us.auth0.com` | Auth0 Universal Login tenant domain for SPA SDK. |
+| `VITE_AUTH0_CLIENT_ID` | Vercel | `your_auth0_spa_client_id` | Public SPA Client ID for Auth0 PKCE login. |
 
 ---
 
-## 2. Backend Environment Variables (Railway)
+## 3. Backend Runtime & Security Variables (Serverless / Node API — Secret)
 
-These variables are strictly private and reside only in Railway's encrypted environment variable store.
+These variables are read exclusively by `server/` and `api/serverless.ts`.
 
-### Core Runtime & Networking
-| Variable | Value | Description |
+### Core Security & Runtime
+
+| Variable | Required in Prod | Description |
 | :--- | :--- | :--- |
-| `NODE_ENV` | `production` | Enables production mode, strict CORS, and disables stack leakages |
-| `PORT` | *(injected by Railway)* | The port the Node.js server binds to (default: 3001) |
-| `FRONTEND_URL` | `https://chethan-kumar-portfolio.vercel.app` | Canonical frontend domain for redirect validation |
-| `CORS_ALLOWED_ORIGINS` | `https://chethan-kumar-portfolio.vercel.app,http://localhost:3000` | Strict origin whitelist for credentialed requests |
-| `SECURITY_HMAC_KEY` | *(cryptographic secret)* | Salt and signature key for session hashing and OTPs |
+| `NODE_ENV` | Yes | Set to `production` to enforce strict fail-closed secrets, CORS, and cookie/header protections. |
+| `PORT` | No | Listening port for `server/index.ts` (default `3001`). |
+| `ADMIN_PASSWORD` | Yes | Strong administrator password (minimum 16 characters; placeholders/default strings rejected). |
+| `SECURITY_HMAC_KEY` | Yes | High-entropy HMAC signing & OTP key (minimum 32 bytes; placeholders/default strings rejected). |
+| `CORS_ALLOWED_ORIGINS` | Yes | Strict comma-separated allowlist of trusted browser origins. |
+| `AUTH0_DOMAIN` | Recommended | Auth0 tenant domain used by `server/auth0.ts` to verify JWT signatures (RS256/JWKS), issuer, audience, and verified owner email. |
+| `GITHUB_TOKEN` | No | Optional GitHub PAT for `scripts/sync-github.mjs` and owner-authenticated `/api/admin/sync` dispatch. |
+| `STATE_FILE_PATH` | No | Override path for local JSON security state persistence. |
+| `NOTIFICATIONS_LOG_PATH` | No | Override path for local JSON notification delivery log. |
 
-### Identity & Auth0 (Backend)
-| Variable | Value | Description |
-| :--- | :--- | :--- |
-| `AUTH0_DOMAIN` | `dev-xxxx.us.auth0.com` | Auth0 tenant domain for backend token verification |
-| `AUTH0_AUDIENCE` | `https://api.chethankumar.dev` | API identifier / audience for JWT claims |
-| `AUTH0_CLIENT_SECRET` | *(confidential)* | Machine-to-machine client secret for Management API |
+### Firebase Firestore Admin SDK (Optional Persistent State)
 
-### Firebase Firestore (Admin SDK)
-| Variable | Value | Description |
-| :--- | :--- | :--- |
-| `FIREBASE_PROJECT_ID` | `chethan-portfolio` | GCP Project ID |
-| `FIREBASE_CLIENT_EMAIL`| `firebase-adminsdk@...iam.gserviceaccount.com` | Service account email |
-| `FIREBASE_PRIVATE_KEY` | `-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n` | RSA private key with newline escapes |
+| Variable | Description |
+| :--- | :--- |
+| `FIREBASE_PROJECT_ID` | Google Cloud / Firebase project ID. |
+| `FIREBASE_CLIENT_EMAIL` | Firebase service account email (`...@...iam.gserviceaccount.com`). |
+| `FIREBASE_PRIVATE_KEY` | Service account RSA private key (escape newlines as `\n` in single-line env stores). |
 
-### Twilio Telemetry & Security Alerts
-| Variable | Value | Description |
-| :--- | :--- | :--- |
-| `TWILIO_ACCOUNT_SID` | `ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` | Twilio Account SID |
-| `TWILIO_AUTH_TOKEN` | *(secret)* | Twilio Primary Auth Token |
-| `TWILIO_API_KEY_SID` | `SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` | Scoped API Key SID |
-| `TWILIO_API_KEY_SECRET`| *(secret)* | Scoped API Key Secret |
-| `TWILIO_FROM_NUMBER` | `+17372508034` | Approved E.164 SMS phone number |
-| `TWILIO_WHATSAPP_FROM` | `whatsapp:+14155238886` | Twilio WhatsApp sandbox/business number |
-| `OWNER_ALERT_EMAIL` | `the.suryaputraa@gmail.com` | Owner security notification recipient |
-| `OWNER_ALERT_PHONE_E164`| `+919380469287` | Owner SMS / WhatsApp alert recipient |
+### Multi-Channel Notification & Webhook Configuration (Optional)
+
+| Variable | Description |
+| :--- | :--- |
+| `OWNER_ALERT_EMAIL` | Security alert & OTP destination email address (`owner@example.com`). |
+| `OWNER_ALERT_PHONE_E164` | Owner E.164 SMS destination (`+15550000000`). |
+| `OWNER_WHATSAPP_PHONE_E164` | Owner E.164 WhatsApp destination (`+15550000000`). |
+| `EMAIL_PROVIDER` | Active email transport selector (`twilio`, `resend`, or `smtp`). |
+| `EMAIL_FROM_ADDRESS` | Generic sender email address (`security@example.com`). |
+| `TWILIO_ACCOUNT_SID` | Twilio Account SID (`AC...`). |
+| `TWILIO_AUTH_TOKEN` | Twilio Auth Token (also used for webhook signature validation). |
+| `TWILIO_API_KEY_SID` / `TWILIO_API_KEY_SECRET` | Scoped Twilio API key credentials. |
+| `TWILIO_ACCOUNT_EMAIL` | Account email metadata for Twilio diagnostics. |
+| `TWILIO_FROM_NUMBER` | Approved E.164 SMS sender number (`+15005550006` placeholder). |
+| `TWILIO_MESSAGING_SERVICE_SID` | Optional Twilio Messaging Service SID (`MG...`). |
+| `TWILIO_EMAIL_FROM_ADDRESS` | Sender address for Twilio Comms Email API. |
+| `TWILIO_EMAIL_API_BASE_URL` | Twilio Comms Email endpoint URL. |
+| `TWILIO_WHATSAPP_FROM` | Twilio WhatsApp sender (`whatsapp:+14155238886`). |
+| `TWILIO_SMS_STATUS_CALLBACK_URL` | HTTPS webhook URL for SMS delivery callbacks. |
+| `TWILIO_WHATSAPP_STATUS_CALLBACK_URL` | HTTPS webhook URL for WhatsApp callbacks. |
+| `TWILIO_STATUS_CALLBACK_URL` | Fallback Twilio status callback URL. |
+| `TWILIO_VERIFIED_RECIPIENT_PHONE` | Confirmed E.164 verified caller ID on Twilio trial accounts. |
+| `TWILIO_TRIAL_MODE` | Set `"true"` when running on a Twilio trial account. |
+| `PHONE_OWNERSHIP_VERIFIED` | `"true"` / `"false"` tracking verified SMS destination ownership. |
+| `TWILIO_EMAIL_DOMAIN_VERIFIED` | `"true"` / `"false"` tracking verified email sender domain. |
+| `TWILIO_WHATSAPP_SANDBOX_JOINED` | `"true"` / `"false"` tracking WhatsApp sandbox opt-in. |
+| `WHATSAPP_OWNERSHIP_VERIFIED` | `"true"` / `"false"` tracking WhatsApp destination verification. |
+| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | High-entropy token verified on Meta WhatsApp webhook subscription challenge. |
+| `RESEND_API_KEY` / `RESEND_DOMAIN_VERIFIED` | Resend API key and domain verification flag. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | Standard SMTP fallback configuration. |

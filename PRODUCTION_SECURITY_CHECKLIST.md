@@ -26,7 +26,7 @@
 
 ## 3. Network & Transport Security
 
-- [x] **HTTPS Enforced:** Both Vercel (`https://chethan-kumar-portfolio.vercel.app`) and Railway (`https://backend-api-production-c798.up.railway.app`) run over encrypted TLS.
+- [x] **HTTPS Enforced:** Both Vercel (`https://chethan-kumar-portfolio.vercel.app`) and Railway (`https://your-backend.example.com`) run over encrypted TLS.
 - [x] **Strict CORS Policy:** Whitelist restricted to production Vercel origins and local development hosts. Wildcards (`*`) with credentials are completely disabled.
 - [x] **HTTP Security Headers:**
   - `X-Content-Type-Options: nosniff`

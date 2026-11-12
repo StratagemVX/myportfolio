@@ -42,3 +42,6 @@ lighthouse-*.json
 .env*
 
 !.env.example
+.lighthouse-results/
+playwright-report/
+test-results/

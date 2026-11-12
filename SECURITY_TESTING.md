@@ -12,41 +12,27 @@ All security scenarios are programmatically tested in `tests/owner-security.test
 npx vitest run
 ```
 
-### Test Results Summary:
-```
-✓ tests/portfolio.test.ts  (5 tests)
-  ✓ Page routing, meta tags, and responsive container bounds
-  ✓ Work, Evidence, Archive, Academics, Contact navigation verification
-  ✓ Recruiter Brief alternate label verification
-  ✓ Zero horizontal overflow on desktop and mobile
-  ✓ 94.8% viewport width at 1536px resolution
+### Verification Coverage Summary:
+Run the built bundle + automated security suites locally with:
 
-✓ tests/owner-security.test.ts  (11 tests)
-  ✓ Scenario 1 & 2: Primary authentication succeeds and enforces RFC 6238 TOTP factor validation
-  ✓ Scenario 3: Single-use emergency recovery codes can be verified and consumed
-  ✓ Scenario 4 & 5: Owner email OTP generation, HMAC hashing, and single-use validation
-  ✓ Scenario 6 & 10: Prevention of factor removal when no other factor is enrolled
-  ✓ Scenario 7 & 8: Private Recruiter Access tokens are stored as SHA-256 hashes only
-  ✓ Scenario 9: Revoked recruiter token cannot be accessed
-  ✓ Scenario 11: Security audit logs are chronological and formatted in Indian Standard Time (IST)
-  ✓ Scenario 12: Notification service enforces truthful statuses and never claims DELIVERED without confirmation
-  ✓ Scenario 13: Privacy sanitization - SecurityGate.tsx contains NO literal the.suryaputraa@gmail.com
-  ✓ Scenario 14: Masking functions protect PII correctly (t***a@g***l.com, +91 93804 •••••)
-  ✓ Scenario 15: Google and Microsoft Authenticator dual-support validation
-
-Test Files: 2 passed (2)
-Tests:      16 passed (16)
-Duration:   1.6s
+```bash
+npm run build
+npm test
 ```
+
+Key verified security properties:
+- `tests/portfolio.test.ts`: Page routing, meta tags, `/admin` `noindex` isolation, self-hosted fonts, CSP header rules, and AI discovery manifests.
+- `tests/owner-security.test.ts`: Primary authentication, RFC 6238 TOTP validation, single-use recovery codes, OTP password reset, Factor Protection Policy, recruiter token hashing/revocation, IST audit logs, and honest notification delivery diagnostics.
+- `tests/owner-session-passkey.test.ts` & `tests/auth-api-client.test.ts`: Bearer/session cookie lifecycle, passkey binding, and resilient frontend JSON/HTML error handling.
+- Additional fail-closed secret/Auth0/WebAuthn/CORS tests are tracked on `security/fail-closed-admin-auth` (`tests/security-hardening.test.ts`).
 
 ---
 
 ## 2. Key Security Verification Checks
 
-### 1. Gmail Privacy Sanitization (Scenario 13)
-- **Check:** Search the codebase for public disclosures of `the.suryaputraa@gmail.com`.
-- **Assertion:** `SecurityGate.tsx` and all public bundle code contain zero occurrences of the raw personal Gmail address.
-- **Pass Status:** Verified. Login fields default to empty strings (`''`) with generic placeholders (`Enter your login identifier`).
+### 1. Owner Contact Privacy Sanitization
+- **Check:** Search public bundle code and tracked documentation for literal personal email addresses or phone numbers.
+- **Assertion:** `SecurityGate.tsx`, client bundles, and public docs contain zero raw personal addresses/numbers. Login fields default to empty strings (`''`) with generic placeholders (`Enter your login identifier`).
 
 ### 2. Status Accuracy & Anti-Simulation Policy (Scenario 12)
 - **Check:** Dispatch test alerts when no provider credentials exist.
@@ -75,9 +61,9 @@ Duration:   1.6s
    - Enter your owner login identifier and password.
    - Click `CONTINUE TO VERIFICATION`.
    - Verify the multi-factor challenge prompt appears with `Authenticator`, `Passkey`, and `Backup Code` tabs.
-   - Enter your 6-digit TOTP code (or `123456` in local development).
+   - Enter the 6-digit TOTP code from your enrolled authenticator app (or your verified test fixture code in isolated tests).
    - Verify successful redirect to `Chethan Kumar · Security Control Room`.
 3. **Account & Security Console:**
-   - Check the **Verified Account** indicator in the top header: displays masked identity `t***@g***.com`.
+   - Check the **Verified Account** indicator in the top header: displays masked identity `o***@e***.com`.
    - Switch to **Authenticator Apps**: verify the 4-row Authenticator Management Table displays Google Authenticator, Microsoft Authenticator, Recovery Codes, and Passkeys with accurate status pills.
    - Switch to **Notifications**: click `Send Test Email` and inspect the live diagnostic feedback window showing provider reference ID or configuration diagnostic.

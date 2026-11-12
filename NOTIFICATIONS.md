@@ -10,9 +10,9 @@ The portfolio incorporates an enterprise out-of-band notification engine that di
 
 | Channel | Target Destination | Status Requirement | Primary Role |
 | :--- | :--- | :--- | :--- |
-| **Email** | `the.suryaputraa@gmail.com` | Pre-verified owner inbox | Primary alert channel, password OTP delivery, Auth0 reset links |
-| **SMS** | `+919380469287` | Requires 6-digit ownership verification OTP | Secondary out-of-band alerts for critical security events |
-| **WhatsApp** | `+919380469287` | Requires 6-digit ownership verification OTP | Urgent notifications via Meta WhatsApp Business Cloud API |
+| **Email** | `owner@example.com` | Pre-verified owner inbox | Primary alert channel, password OTP delivery, Auth0 reset links |
+| **SMS** | `+15550000000` | Requires 6-digit ownership verification OTP | Secondary out-of-band alerts for critical security events |
+| **WhatsApp** | `+15550000000` | Requires 6-digit ownership verification OTP | Urgent notifications via Meta WhatsApp Business Cloud API |
 
 > [!NOTE]
 > SMS and WhatsApp are notification channels only. They are never utilized as the sole authentication or recovery factor.
@@ -45,7 +45,7 @@ All email notifications follow strict security hygiene:
 ```
 Subject: Portfolio Admin — Successful Login
 From: security@chethankumar.dev
-To: the.suryaputraa@gmail.com
+To: owner@example.com
 
 [CHETHAN KUMAR PORTFOLIO SECURITY DISPATCH]
 Successful Administrator Login Detected
@@ -84,4 +84,4 @@ https://chethankumar.dev/admin
 
 ### C. Meta WhatsApp Business Cloud API
 - Requires: `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, approved Meta template.
-- Sends business-initiated security alerts to verified target `+919380469287`.
+- Sends business-initiated security alerts to verified target `+15550000000`.

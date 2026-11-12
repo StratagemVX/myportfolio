@@ -87,8 +87,8 @@ Vercel utilizes `vercel.json` to route `/api/*` requests to the serverless entry
 - [ ] Visit `https://your-domain.com/work` — Verify featured engineering projects render.
 - [ ] Visit `https://your-domain.com/executive-brief` — Verify 60-second summary and evidence matrix.
 - [ ] Visit `https://your-domain.com/admin` — Verify the Administrator Security Gate renders.
-- [ ] Test Primary Login (`the.suryaputraa@gmail.com` + passphrase) -> Verify mandatory MFA challenge triggers.
+- [ ] Test Primary Login (`owner@example.com` + passphrase) -> Verify mandatory MFA challenge triggers.
 - [ ] Test Authenticator App (TOTP) or Emergency Backup Code -> Verify entry to Account & Security.
-- [ ] In Account & Security -> Test "Send Test Email" -> Verify dispatch to `the.suryaputraa@gmail.com`.
+- [ ] In Account & Security -> Test "Send Test Email" -> Verify dispatch to `owner@example.com`.
 - [ ] In Account & Security -> Inspect Security Activity -> Verify events are recorded with IST timestamps.
 - [ ] Test Private Recruiter Access -> Issue invitation token -> Verify single-use reveal and validation.

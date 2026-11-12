@@ -57,10 +57,10 @@ cp .env.example .env.local
 ```
 
 ### Local Development Defaults:
-The portfolio includes complete offline and local fallbacks:
-- If **Auth0** is not configured, the frontend gracefully falls back to local administrative access.
-- If **Firebase Firestore** credentials are not present, the backend automatically uses `server/security-state.json` and `server/notifications-log.json`.
-- If **Twilio** credentials are unpopulated, notification dispatches record to the local audit table with `BLOCKED_CONFIGURATION` diagnostics rather than crashing.
+- Set local development environment variables (`ADMIN_PASSWORD`, `SECURITY_HMAC_KEY`, `CORS_ALLOWED_ORIGINS`) in `.env.local` or your shell environment before running `npm run server` (in `NODE_ENV=production`, missing, weak, or placeholder secrets fail closed).
+- If **Auth0** is not configured locally (`AUTH0_DOMAIN` / `VITE_AUTH0_*`), admin sign-in uses the configured local password + TOTP / WebAuthn passkey controls; `/admin` remains locked until authenticated.
+- If **Firebase Firestore** credentials are not present, the backend uses `server/security-state.json` and `server/notifications-log.json` (or `STATE_FILE_PATH` / `NOTIFICATIONS_LOG_PATH`).
+- If **Twilio** or SMTP credentials are unpopulated, notification dispatches record `CONFIGURATION_REQUIRED` / `BLOCKED_CONFIGURATION` diagnostics rather than crashing.
 
 ---
 
@@ -121,11 +121,12 @@ npm test
 npx vitest watch
 ```
 
-### Verified Test Coverage:
-- `tests/portfolio.test.ts`: Validates project schema, case study consistency, and navigation routes (5 tests).
-- `tests/owner-security.test.ts`: Tests constant-time password validation, TOTP RFC 6238 generation, single-use recovery code hashing, and session TTL expiration (18 tests).
-- `tests/notification-infrastructure.test.ts`: Validates Twilio SMS, WhatsApp, and Comms Email payload formatting, status normalization, and webhook verification (18 tests).
-- **Total:** `41 of 41 passing (100%)`.
+### Running Vitest & End-to-End Suites:
+After running `npm run build` (which populates `dist/` required by static metadata checks), execute the unit and integration suites via `npm test`:
+- `tests/portfolio.test.ts`: Validates project metadata, case study consistency, SEO/robots configuration, self-hosted fonts, and AI discovery manifests.
+- `tests/owner-security.test.ts`: Tests PBKDF2 / constant-time password validation, TOTP RFC 6238 generation, single-use recovery code hashing, and session TTL expiration.
+- `tests/notification-infrastructure.test.ts`: Validates Twilio SMS, WhatsApp, Comms Email payload formatting, status normalization, and webhook verification.
+- On the security & performance branches (`security/fail-closed-admin-auth` and `perf/lighthouse-a11y-ai-discoverability`), additional suites cover `tests/security-hardening.test.ts` and `tests/e2e/portfolio.e2e.ts` (`npm run test:e2e`, `npm run lighthouse:audit`).
 
 ---
 

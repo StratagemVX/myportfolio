@@ -14,7 +14,7 @@ flowchart LR
     end
 
     subgraph RailwayCloud ["Railway Service Tier"]
-        BackendAPI["Node.js Service (:3001)<br/>https://backend-api-production-c798.up.railway.app"]
+        BackendAPI["Node.js Service (:3001)<br/>https://your-backend.example.com"]
     end
 
     subgraph DataTier ["Firebase Cloud"]
@@ -56,7 +56,7 @@ The portfolio uses `vercel.json` to handle SPA client-side deep links and seamle
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://backend-api-production-c798.up.railway.app/api/$1"
+      "destination": "https://your-backend.example.com/api/$1"
     },
     {
       "source": "/(.*)",
@@ -112,7 +112,7 @@ The repository includes a declarative `railway.json` file configuring Nixpacks b
 1. Log in to [Railway](https://railway.app).
 2. Create a **New Project** → **Deploy from GitHub repo**.
 3. Select `StratagemVX/myportfolio`.
-4. Under **Settings → Networking**, generate a public Railway domain (e.g., `backend-api-production-c798.up.railway.app`).
+4. Under **Settings → Networking**, generate a public Railway domain (e.g., `your-backend.example.com`).
 5. Ensure the Healthcheck Path is set to `/health`.
 
 ### 3.3 Backend Environment Variables (Railway)
@@ -138,7 +138,7 @@ TWILIO_FROM_NUMBER=+15005550006
 OWNER_ALERT_PHONE_E164=+91XXXXXXXXXX
 EMAIL_PROVIDER=twilio
 TWILIO_EMAIL_FROM_ADDRESS=security@chethankumar.dev
-OWNER_ALERT_EMAIL=the.suryaputraa@gmail.com
+OWNER_ALERT_EMAIL=owner@example.com
 TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 OWNER_WHATSAPP_PHONE_E164=+91XXXXXXXXXX
 
@@ -191,7 +191,7 @@ Once deployed, verify production health:
 curl -I https://chethankumar.dev
 
 # 2. Verify Backend Liveness via Railway Direct URL
-curl https://backend-api-production-c798.up.railway.app/health
+curl https://your-backend.example.com/health
 
 # 3. Verify Backend Liveness via Vercel Proxy Rewrite
 curl https://chethankumar.dev/api/health
