@@ -131,6 +131,9 @@ export function getValidatedSession(req: IncomingMessage): ActiveSession | null 
   // 1. Verify Cryptographic Signature
   const sigCheck = verifySessionToken(token);
   if (sigCheck.valid && sigCheck.sessionId) {
+    if (sigCheck.userId && sigCheck.userId !== state.owner.id) {
+      return null;
+    }
     const existingSession = (state.sessions || []).find(s => s.id === sigCheck.sessionId);
     if (existingSession) {
       if (existingSession.revoked) return null;
@@ -675,11 +678,16 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
 
   // 4. Secondary MFA: Verify TOTP Code (Strict RFC 6238 - ZERO Hardcoded Bypasses)
   if (pathname === '/api/auth/mfa/verify-totp' && method === 'POST') {
+    if (!checkLoginRateLimit(meta.ipAddress)) {
+      sendJson(res, 429, { error: 'Too many failed verification attempts. Please wait 10 minutes before trying again.' });
+      return true;
+    }
+
     const body = await parseJsonBody(req);
     const { challengeToken, totpCode } = body;
     const state = stateManager.getState();
 
-    const challenge = stateManager.pendingLoginChallenges.get(challengeToken);
+    const challenge = typeof challengeToken === 'string' ? stateManager.pendingLoginChallenges.get(challengeToken) : undefined;
     if (!challenge || Date.now() > challenge.expiresAt) {
       sendJson(res, 401, { error: 'Authentication challenge expired. Please re-enter your primary credentials.' });
       return true;
@@ -774,11 +782,16 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
 
   // 5. Secondary MFA: Verify Recovery Code (Single-Use, Server-Side Hash Verification - Zero Bypasses)
   if (pathname === '/api/auth/mfa/verify-recovery' && method === 'POST') {
+    if (!checkLoginRateLimit(meta.ipAddress)) {
+      sendJson(res, 429, { error: 'Too many failed verification attempts. Please wait 10 minutes before trying again.' });
+      return true;
+    }
+
     const body = await parseJsonBody(req);
     const { challengeToken, recoveryCode } = body;
     const state = stateManager.getState();
 
-    const challenge = stateManager.pendingLoginChallenges.get(challengeToken);
+    const challenge = typeof challengeToken === 'string' ? stateManager.pendingLoginChallenges.get(challengeToken) : undefined;
     if (!challenge || Date.now() > challenge.expiresAt) {
       sendJson(res, 401, { error: 'Authentication challenge expired. Please re-enter your primary credentials.' });
       return true;
@@ -943,7 +956,12 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>): We
     rpID = process.env.NODE_ENV === 'production' ? 'chethan-kumar-portfolio.vercel.app' : 'localhost';
   }
 
-  return { ok: true, rpID, expectedRPID, expectedOrigin: approvedOrigins };
+  return {
+    ok: true,
+    rpID,
+    expectedRPID,
+    expectedOrigin: validatedOrigin ? [validatedOrigin] : approvedOrigins
+  };
 }
 
   // 6. Passkey WebAuthn Login Options & Verification
@@ -1099,19 +1117,20 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>): We
       }
     });
 
+    const maskedRecoveryEmail = maskEmail(state.owner.recoveryEmail);
     stateManager.addAuditLog({
       action: 'PASSWORD_CHANGE_OTP_DISPATCHED',
       category: 'PASSWORD',
       status: 'SUCCESS',
       actor: state.owner.loginEmail,
       ipAddress: meta.ipAddress,
-      details: `Dispatched 10-minute expiring confirmation code to ${state.owner.recoveryEmail}`
+      details: `Dispatched 10-minute expiring confirmation code to ${maskedRecoveryEmail}`
     });
 
     sendJson(res, 200, {
       success: true,
-      destination: state.owner.recoveryEmail,
-      message: `Confirmation code dispatched to verified owner email (${state.owner.recoveryEmail}). Expires in 10 minutes.`
+      destination: maskedRecoveryEmail,
+      message: `Confirmation code dispatched to verified owner email (${maskedRecoveryEmail}). Expires in 10 minutes.`
     });
     return true;
   }
@@ -1160,10 +1179,18 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>): We
       stateManager.setOwnerPassword(newPassword);
     }
 
-    // Revoke all other active sessions for defense in depth
-    state.sessions = state.sessions.filter(s => s.isCurrent);
-    stateManager.save();
+    // Revoke all other active sessions while retaining revoked markers so stale signed tokens cannot recover
+    const currentSession = getValidatedSession(req);
+    if (currentSession) {
+      stateManager.revokeOtherSessions(currentSession.id);
+    } else {
+      for (const s of state.sessions) {
+        s.revoked = true;
+      }
+      stateManager.save();
+    }
 
+    const maskedRecoveryEmail = maskEmail(state.owner.recoveryEmail);
     stateManager.addAuditLog({
       action: 'PASSWORD_RESET_WORKFLOW_INITIATED',
       category: 'PASSWORD',
@@ -1177,7 +1204,7 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>): We
       eventType: 'PASSWORD_RESET_TICKET_DELIVERED',
       subject: 'Portfolio Admin — Password Reset Workflow Activated',
       headline: 'Official Password Reset Workflow Initiated',
-      details: `Your administrative password-reset workflow has been verified and triggered. Check your verified inbox (${state.owner.recoveryEmail}) for the official Auth0 reset link.`,
+      details: `Your administrative password-reset workflow has been verified and triggered. Check your verified inbox (${maskedRecoveryEmail}) for the official Auth0 reset link.`,
       severity: 'WARNING',
       metadata: {
         ipAddress: meta.ipAddress,
@@ -1190,7 +1217,7 @@ function getWebAuthnConfig(req: IncomingMessage, body?: Record<string, any>): We
 
     sendJson(res, 200, {
       success: true,
-      message: `Password change verified. Official Auth0 password-reset workflow dispatched to ${state.owner.recoveryEmail}. Other sessions revoked.`
+      message: `Password change verified. Official Auth0 password-reset workflow dispatched to ${maskedRecoveryEmail}. Other sessions revoked.`
     });
     return true;
   }

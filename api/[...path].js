@@ -2512,6 +2512,9 @@ function getValidatedSession(req) {
   const tokenHash = sha256(token);
   const sigCheck = verifySessionToken(token);
   if (sigCheck.valid && sigCheck.sessionId) {
+    if (sigCheck.userId && sigCheck.userId !== state.owner.id) {
+      return null;
+    }
     const existingSession = (state.sessions || []).find((s) => s.id === sigCheck.sessionId);
     if (existingSession) {
       if (existingSession.revoked) return null;
@@ -2940,10 +2943,14 @@ async function handleApiRequest(req, res) {
     return true;
   }
   if (pathname === "/api/auth/mfa/verify-totp" && method === "POST") {
+    if (!checkLoginRateLimit(meta.ipAddress)) {
+      sendJson(res, 429, { error: "Too many failed verification attempts. Please wait 10 minutes before trying again." });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { challengeToken, totpCode } = body;
     const state = stateManager.getState();
-    const challenge = stateManager.pendingLoginChallenges.get(challengeToken);
+    const challenge = typeof challengeToken === "string" ? stateManager.pendingLoginChallenges.get(challengeToken) : void 0;
     if (!challenge || Date.now() > challenge.expiresAt) {
       sendJson(res, 401, { error: "Authentication challenge expired. Please re-enter your primary credentials." });
       return true;
@@ -3023,10 +3030,14 @@ async function handleApiRequest(req, res) {
     return true;
   }
   if (pathname === "/api/auth/mfa/verify-recovery" && method === "POST") {
+    if (!checkLoginRateLimit(meta.ipAddress)) {
+      sendJson(res, 429, { error: "Too many failed verification attempts. Please wait 10 minutes before trying again." });
+      return true;
+    }
     const body = await parseJsonBody(req);
     const { challengeToken, recoveryCode } = body;
     const state = stateManager.getState();
-    const challenge = stateManager.pendingLoginChallenges.get(challengeToken);
+    const challenge = typeof challengeToken === "string" ? stateManager.pendingLoginChallenges.get(challengeToken) : void 0;
     if (!challenge || Date.now() > challenge.expiresAt) {
       sendJson(res, 401, { error: "Authentication challenge expired. Please re-enter your primary credentials." });
       return true;
@@ -3155,7 +3166,12 @@ async function handleApiRequest(req, res) {
     if (!rpID) {
       rpID = process.env.NODE_ENV === "production" ? "chethan-kumar-portfolio.vercel.app" : "localhost";
     }
-    return { ok: true, rpID, expectedRPID, expectedOrigin: approvedOrigins };
+    return {
+      ok: true,
+      rpID,
+      expectedRPID,
+      expectedOrigin: validatedOrigin ? [validatedOrigin] : approvedOrigins
+    };
   }
   if (pathname === "/api/auth/passkey/login-options" && method === "POST") {
     const body = await parseJsonBody(req);
@@ -3291,18 +3307,19 @@ async function handleApiRequest(req, res) {
         timestampIST: formatIST()
       }
     });
+    const maskedRecoveryEmail = maskEmail(state.owner.recoveryEmail);
     stateManager.addAuditLog({
       action: "PASSWORD_CHANGE_OTP_DISPATCHED",
       category: "PASSWORD",
       status: "SUCCESS",
       actor: state.owner.loginEmail,
       ipAddress: meta.ipAddress,
-      details: `Dispatched 10-minute expiring confirmation code to ${state.owner.recoveryEmail}`
+      details: `Dispatched 10-minute expiring confirmation code to ${maskedRecoveryEmail}`
     });
     sendJson(res, 200, {
       success: true,
-      destination: state.owner.recoveryEmail,
-      message: `Confirmation code dispatched to verified owner email (${state.owner.recoveryEmail}). Expires in 10 minutes.`
+      destination: maskedRecoveryEmail,
+      message: `Confirmation code dispatched to verified owner email (${maskedRecoveryEmail}). Expires in 10 minutes.`
     });
     return true;
   }
@@ -3340,8 +3357,16 @@ async function handleApiRequest(req, res) {
     if (typeof newPassword === "string" && newPassword.trim().length >= 16) {
       stateManager.setOwnerPassword(newPassword);
     }
-    state.sessions = state.sessions.filter((s) => s.isCurrent);
-    stateManager.save();
+    const currentSession = getValidatedSession(req);
+    if (currentSession) {
+      stateManager.revokeOtherSessions(currentSession.id);
+    } else {
+      for (const s of state.sessions) {
+        s.revoked = true;
+      }
+      stateManager.save();
+    }
+    const maskedRecoveryEmail = maskEmail(state.owner.recoveryEmail);
     stateManager.addAuditLog({
       action: "PASSWORD_RESET_WORKFLOW_INITIATED",
       category: "PASSWORD",
@@ -3354,7 +3379,7 @@ async function handleApiRequest(req, res) {
       eventType: "PASSWORD_RESET_TICKET_DELIVERED",
       subject: "Portfolio Admin \u2014 Password Reset Workflow Activated",
       headline: "Official Password Reset Workflow Initiated",
-      details: `Your administrative password-reset workflow has been verified and triggered. Check your verified inbox (${state.owner.recoveryEmail}) for the official Auth0 reset link.`,
+      details: `Your administrative password-reset workflow has been verified and triggered. Check your verified inbox (${maskedRecoveryEmail}) for the official Auth0 reset link.`,
       severity: "WARNING",
       metadata: {
         ipAddress: meta.ipAddress,
@@ -3366,7 +3391,7 @@ async function handleApiRequest(req, res) {
     });
     sendJson(res, 200, {
       success: true,
-      message: `Password change verified. Official Auth0 password-reset workflow dispatched to ${state.owner.recoveryEmail}. Other sessions revoked.`
+      message: `Password change verified. Official Auth0 password-reset workflow dispatched to ${maskedRecoveryEmail}. Other sessions revoked.`
     });
     return true;
   }

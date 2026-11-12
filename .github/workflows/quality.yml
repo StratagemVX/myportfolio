@@ -32,11 +32,22 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Audit production dependencies (high+)
-        run: npm audit --omit=dev --audit-level=high
+      - name: Audit full dependency tree (zero vulnerabilities)
+        run: npm audit
+
+      - name: Audit production dependencies (zero vulnerabilities)
+        run: npm audit --omit=dev
+
+      - name: TypeScript typecheck
+        run: npx tsc --noEmit
 
       - name: Type-check, build and regenerate API bundles
         run: npm run build
 
-      - name: Run unit tests
+      - name: Verify generated API bundle consistency
+        run: |
+          cmp -s api/index.js "api/[...path].js"
+          git diff --exit-code -- api/index.js "api/[...path].js"
+
+      - name: Run unit and security tests
         run: npm test

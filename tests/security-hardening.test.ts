@@ -213,8 +213,24 @@ describe('Security Hardening & Regression Suite', () => {
       { method: 'POST', url: '/api/notifications/phone/request-verify', body: { channel: 'SMS' } },
       { method: 'POST', url: '/api/notifications/phone/confirm-verify', body: { channel: 'SMS', code: '123456' } },
       { method: 'GET', url: '/api/sessions' },
+      { method: 'POST', url: '/api/sessions/revoke-others', body: {} },
+      { method: 'DELETE', url: '/api/sessions/sess-123' },
       { method: 'GET', url: '/api/audit-logs' },
-      { method: 'GET', url: '/api/recruiter-tokens' }
+      { method: 'GET', url: '/api/recruiter-tokens' },
+      { method: 'POST', url: '/api/recruiter-tokens', body: { label: 'Unauthorized' } },
+      { method: 'DELETE', url: '/api/recruiter-tokens/rt-123' },
+      { method: 'PATCH', url: '/api/mfa/passkey/pk-123', body: { label: 'Pwned' } },
+      { method: 'DELETE', url: '/api/mfa/passkey/pk-123' },
+      { method: 'POST', url: '/api/security/password/request-otp', body: {} },
+      { method: 'POST', url: '/api/security/password/verify-otp-and-reset', body: { otpCode: '000000' } },
+      { method: 'POST', url: '/api/admin/email/request-change', body: { newEmail: 'attacker@example.com' } },
+      { method: 'POST', url: '/api/admin/email/confirm-change', body: { code: '000000' } },
+      { method: 'POST', url: '/api/admin/recovery-email/request-change', body: { newEmail: 'attacker@example.com' } },
+      { method: 'POST', url: '/api/admin/recovery-email/confirm-change', body: { code: '000000' } },
+      { method: 'GET', url: '/api/notifications/in-app' },
+      { method: 'POST', url: '/api/notifications/in-app/read', body: { id: 'notif-1' } },
+      { method: 'POST', url: '/api/notifications/in-app/dismiss', body: { id: 'notif-1' } },
+      { method: 'POST', url: '/api/notifications/fcm/register', body: { token: 'fcm-123' } }
     ];
 
     it.each(protectedEndpoints)(
@@ -331,6 +347,79 @@ describe('Security Hardening & Regression Suite', () => {
         privateKey
       );
       expect((await verifyAuth0IdToken(unverifiedEmailJwt, baseOptions)).ok).toBe(false);
+
+      // Wrong issuer rejected
+      const wrongIssuerJwt = signJwtRs256(
+        { alg: 'RS256', kid: 'key-1' },
+        {
+          iss: 'https://evil-tenant.us.auth0.com/',
+          aud: 'client_123',
+          sub: 'auth0|owner123',
+          email: 'the.suryaputraa@gmail.com',
+          email_verified: true,
+          exp: nowSec + 300
+        },
+        privateKey
+      );
+      expect((await verifyAuth0IdToken(wrongIssuerJwt, baseOptions)).ok).toBe(false);
+
+      // Wrong audience rejected
+      const wrongAudienceJwt = signJwtRs256(
+        { alg: 'RS256', kid: 'key-1' },
+        {
+          iss: 'https://portfolio-owner.us.auth0.com/',
+          aud: 'other_client_id',
+          sub: 'auth0|owner123',
+          email: 'the.suryaputraa@gmail.com',
+          email_verified: true,
+          exp: nowSec + 300
+        },
+        privateKey
+      );
+      expect((await verifyAuth0IdToken(wrongAudienceJwt, baseOptions)).ok).toBe(false);
+
+      // Non-owner verified identity is rejected by /api/auth/auth0-verify with 403
+      process.env.AUTH0_DOMAIN = 'portfolio-owner.us.auth0.com';
+      process.env.AUTH0_CLIENT_ID = 'client_123';
+      const originalFetch = global.fetch;
+      global.fetch = (async (input: any) => {
+        const url = String(input);
+        if (url.includes('/.well-known/jwks.json')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ keys: [jwk] })
+          } as Response;
+        }
+        return originalFetch(input);
+      }) as typeof fetch;
+
+      try {
+        const nonOwnerJwt = signJwtRs256(
+          { alg: 'RS256', kid: 'key-1' },
+          {
+            iss: 'https://portfolio-owner.us.auth0.com/',
+            aud: 'client_123',
+            sub: 'auth0|stranger999',
+            email: 'stranger@unauthorized.example',
+            email_verified: true,
+            iat: nowSec - 10,
+            exp: nowSec + 300
+          },
+          privateKey
+        );
+        const strangerReq = createMockRequest({
+          method: 'POST',
+          url: '/api/auth/auth0-verify',
+          body: { idToken: nonOwnerJwt }
+        });
+        const strangerRes = createMockResponse();
+        await handleApiRequest(strangerReq, strangerRes.res);
+        expect(strangerRes.getStatusCode()).toBe(403);
+        expect(strangerRes.getJson()?.challengeToken).toBeUndefined();
+      } finally {
+        global.fetch = originalFetch;
+      }
     });
   });
 
@@ -484,6 +573,98 @@ describe('Security Hardening & Regression Suite', () => {
           { SECURITY_HMAC_KEY: '9f8e7d6c5b4a3928172635445566778899aabbccddeeff001122334455667788', ADMIN_PASSWORD: 'weak' } as NodeJS.ProcessEnv
         )
       ).toThrow();
+    });
+  });
+
+  describe('8. WebAuthn Origin/RP ID Mismatch, Challenge Replay, and Secret Non-Disclosure', () => {
+    it('rejects WebAuthn clientDataJSON origin mismatch and burns challenge against replay', async () => {
+      const optionsReq = createMockRequest({
+        method: 'POST',
+        url: '/api/auth/passkey/login-options',
+        headers: { origin: 'https://chethankumar.dev' },
+        body: {}
+      });
+      const optionsRes = createMockResponse();
+      await handleApiRequest(optionsReq, optionsRes.res);
+      expect(optionsRes.getStatusCode()).toBe(200);
+      const issued = optionsRes.getJson();
+      expect(issued?.rpId).toBe('chethankumar.dev');
+      expect(issued?.challenge).toBeTruthy();
+
+      // Reusing challenge from another origin must fail closed and consume challenge
+      const badOriginVerifyReq = createMockRequest({
+        method: 'POST',
+        url: '/api/auth/passkey/verify-login',
+        headers: { origin: 'https://chethankumar.dev' },
+        body: {
+          response: {
+            id: 'cred-1',
+            response: {
+              clientDataJSON: Buffer.from(
+                JSON.stringify({
+                  type: 'webauthn.get',
+                  challenge: issued.challenge,
+                  origin: 'https://phishing.example'
+                })
+              ).toString('base64url')
+            }
+          }
+        }
+      });
+      const badOriginVerifyRes = createMockResponse();
+      await handleApiRequest(badOriginVerifyReq, badOriginVerifyRes.res);
+      expect(badOriginVerifyRes.getStatusCode()).toBe(403);
+      expect(stateManager.isWebAuthnChallengeValid(issued.challenge, 'authentication', 'usr_stratagemvx_owner_01')).toBe(false);
+
+      // Replaying the same challenge after consumption must also fail
+      const replayReq = createMockRequest({
+        method: 'POST',
+        url: '/api/auth/passkey/verify-login',
+        headers: { origin: 'https://chethankumar.dev' },
+        body: {
+          response: {
+            id: 'cred-1',
+            response: {
+              clientDataJSON: Buffer.from(
+                JSON.stringify({
+                  type: 'webauthn.get',
+                  challenge: issued.challenge,
+                  origin: 'https://chethankumar.dev'
+                })
+              ).toString('base64url')
+            }
+          }
+        }
+      });
+      const replayRes = createMockResponse();
+      await handleApiRequest(replayReq, replayRes.res);
+      expect(replayRes.getStatusCode()).toBe(400);
+    });
+
+    it('never exposes raw secrets, password hashes, TOTP seeds, or recovery codes in owner profile or session responses', async () => {
+      const { sessionToken } = stateManager.createSession({
+        userId: stateManager.getState().owner.id,
+        ipAddress: '127.0.0.1',
+        userAgent: 'Vitest',
+        browser: 'Vitest',
+        os: 'Test'
+      });
+
+      const sessionReq = createMockRequest({
+        method: 'GET',
+        url: '/api/auth/session',
+        headers: { authorization: `Bearer ${sessionToken}` }
+      });
+      const sessionRes = createMockResponse();
+      await handleApiRequest(sessionReq, sessionRes.res);
+      expect(sessionRes.getStatusCode()).toBe(200);
+      const serialized = sessionRes.getBody();
+      expect(serialized).not.toContain('passwordHash');
+      expect(serialized).not.toContain('passwordSalt');
+      expect(serialized).not.toContain('totpSecret');
+      expect(serialized).not.toContain(process.env.ADMIN_PASSWORD || 'ci-only');
+      expect(serialized).not.toContain(process.env.SECURITY_HMAC_KEY || 'ci-only');
+      expect(sessionRes.getJson()?.profile?.authenticators?.[0]?.secret).toBeUndefined();
     });
   });
 });
