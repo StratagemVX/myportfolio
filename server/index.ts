@@ -1,52 +1,16 @@
 import 'dotenv/config';
 import http from 'node:http';
 import { handleApiRequest } from './apiHandler';
-import { formatIST } from './cryptoUtils';
+import { handleCorsAndPreflight } from './cors';
+import { assertSecuritySecrets, formatIST } from './cryptoUtils';
 import { isFirebaseConfigured } from './firebase';
+
+assertSecuritySecrets(process.env);
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
-// Production Allowed Origins
-const defaultAllowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'http://127.0.0.1:3000',
-  'https://chethan-kumar-portfolio.vercel.app',
-  'https://backend-api-production-c798.up.railway.app'
-];
-
-function isOriginAllowed(origin: string | undefined): boolean {
-  if (!origin) return true; // Server-to-server or direct curl/healthcheck
-  if (process.env.NODE_ENV !== 'production') return true;
-
-  const configured = (process.env.CORS_ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  
-  const allAllowed = [...defaultAllowedOrigins, ...configured];
-  
-  // Exact match or Vercel preview domain wildcard (*.vercel.app)
-  return allAllowed.some((allowed) => {
-    if (allowed === origin) return true;
-    if (origin.endsWith('.vercel.app')) return true;
-    return false;
-  });
-}
-
 const server = http.createServer(async (req, res) => {
-  const origin = req.headers.origin;
-
-  if (isOriginAllowed(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 204;
-    res.end();
+  if (handleCorsAndPreflight(req, res, process.env) === 'handled') {
     return;
   }
 

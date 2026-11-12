@@ -37,17 +37,9 @@ export default function AdminDashboardPage() {
         if (res.authenticated && res.profile) {
           setProfile(res.profile);
           setIsAuthenticated(true);
-        } else {
-          apiClient.getProfile()
-            .then(pRes => setProfile(pRes.profile))
-            .catch(() => {});
         }
       })
-      .catch(() => {
-        apiClient.getProfile()
-          .then(pRes => setProfile(pRes.profile))
-          .catch(() => {});
-      })
+      .catch(() => {})
       .finally(() => {
         setIsVerifyingSession(false);
       });

@@ -245,7 +245,10 @@ describe('Authentication & API Resilience Suite (Phase 2 & Phase 9)', () => {
     it('POST /api/auth/login with valid owner credentials returns 200 with mandatory MFA challenge', async () => {
       const ownerState = stateManager.getState();
       const ownerEmail = ownerState.owner.loginEmail;
-      const validPass = process.env.ADMIN_PASSWORD || 'Karna@2026!Security';
+      const validPass = process.env.ADMIN_PASSWORD;
+      if (!validPass || validPass.length < 16) {
+        throw new Error('ADMIN_PASSWORD with at least 16 characters must be configured for auth tests.');
+      }
 
       const req = createMockRequest({
         method: 'POST',

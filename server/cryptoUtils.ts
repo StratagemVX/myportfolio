@@ -47,16 +47,76 @@ export function verifyPassword(password: string, hash: string, salt: string): bo
   return safeCompare(computed, hash);
 }
 
+const KNOWN_INSECURE_PASSWORDS = new Set([
+  'Karna@2026!Security',
+  'Karna2026!Security',
+  'your_secure_admin_password_here',
+  'changeme',
+  'password12345678'
+]);
+
+const KNOWN_INSECURE_HMAC_KEYS = new Set([
+  'portfolio-security-hmac-seed-ck-2026',
+  'your_secure_random_hmac_seed_key_replace_in_production'
+]);
+
+export function getHmacKeyError(env: NodeJS.ProcessEnv = process.env): string | null {
+  const hmacKey = env.SECURITY_HMAC_KEY;
+  if (!hmacKey || Buffer.byteLength(hmacKey, 'utf8') < 32) {
+    return 'SECURITY_HMAC_KEY must be configured with at least 32 bytes before starting the security service.';
+  }
+  if (KNOWN_INSECURE_HMAC_KEYS.has(hmacKey.trim()) || /^(.)\1+$/.test(hmacKey.trim())) {
+    return 'SECURITY_HMAC_KEY cannot use a placeholder, hardcoded, or trivial repeated value.';
+  }
+  return null;
+}
+
+export function getHmacSecret(env: NodeJS.ProcessEnv = process.env): string {
+  const err = getHmacKeyError(env);
+  if (err) {
+    throw new Error(err);
+  }
+  return env.SECURITY_HMAC_KEY!;
+}
+
+export function validateSecuritySecrets(env: NodeJS.ProcessEnv = process.env): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const hmacErr = getHmacKeyError(env);
+  if (hmacErr) {
+    errors.push(hmacErr);
+  }
+
+  const adminPassword = env.ADMIN_PASSWORD;
+  if (!adminPassword || adminPassword.trim().length < 16) {
+    errors.push('ADMIN_PASSWORD must be configured with at least 16 characters before starting the security service.');
+  } else if (KNOWN_INSECURE_PASSWORDS.has(adminPassword.trim()) || /^(.)\1+$/.test(adminPassword.trim())) {
+    errors.push('ADMIN_PASSWORD cannot use a source-controlled, placeholder, or trivial repeated credential.');
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+export function assertSecuritySecrets(env: NodeJS.ProcessEnv = process.env): void {
+  const check = validateSecuritySecrets(env);
+  if (!check.valid) {
+    throw new Error(check.errors.join(' '));
+  }
+}
+
+export function generateSecureTokenHex(bytes = 24): string {
+  return crypto.randomBytes(bytes).toString('hex');
+}
+
 // HMAC-SHA256 for OTP hashing and signature verification
-const INTERNAL_HMAC_SECRET = process.env.SECURITY_HMAC_KEY || 'portfolio-security-hmac-seed-ck-2026';
-export function hmacSha256(data: string, secret: string = INTERNAL_HMAC_SECRET): string {
-  return crypto.createHmac('sha256', secret).update(data).digest('hex');
+export function hmacSha256(data: string, secret?: string): string {
+  const resolvedSecret = secret ?? getHmacSecret();
+  return crypto.createHmac('sha256', resolvedSecret).update(data).digest('hex');
 }
 
 // Cryptographically signed session tokens
 export function signSessionToken(sessionId: string, userId: string, expiresAt: number): string {
   const payload = `${sessionId}.${userId}.${expiresAt}`;
-  const sig = hmacSha256(payload, INTERNAL_HMAC_SECRET);
+  const sig = hmacSha256(payload, getHmacSecret());
   return `sess_${payload}.${sig}`;
 }
 
@@ -73,7 +133,7 @@ export function verifySessionToken(token: string): { valid: boolean; sessionId?:
   if (isNaN(expiresAt) || Date.now() > expiresAt) {
     return { valid: false };
   }
-  const expectedSig = hmacSha256(`${sessionId}.${userId}.${expiresAtStr}`, INTERNAL_HMAC_SECRET);
+  const expectedSig = hmacSha256(`${sessionId}.${userId}.${expiresAtStr}`, getHmacSecret());
   if (!safeCompare(sig, expectedSig)) {
     return { valid: false };
   }

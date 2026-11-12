@@ -1,19 +1,14 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { handleApiRequest } from '../server/apiHandler';
+import { handleCorsAndPreflight } from '../server/cors';
+import { assertSecuritySecrets } from '../server/cryptoUtils';
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  // CORS configuration
-  const origin = req.headers.origin;
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 204;
-    res.end();
+  if (handleCorsAndPreflight(req, res, process.env) === 'handled') {
     return;
   }
+
+  assertSecuritySecrets(process.env);
 
   // Normalize URL from Vercel rewrites or direct requests
   const host = req.headers.host || 'localhost:3000';

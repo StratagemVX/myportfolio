@@ -52,28 +52,20 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const idToken = hashParams.get('id_token');
         if (idToken) {
-          const parts = idToken.split('.');
-          if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-            const email = payload.email;
-            const sub = payload.sub;
-            if (email) {
-              setIsLoading(true);
-              apiClient.auth0Verify(email, sub).then((res) => {
-                if (res.requireMfa && res.challengeToken) {
-                  setMfaRequired(true);
-                  setChallengeToken(res.challengeToken);
-                  setHasPasskeys(res.hasPasskeys || false);
-                  setSuccessMsg('Auth0 identity verified. Secondary hardware MFA challenge mandatory.');
-                  window.history.replaceState(null, '', window.location.pathname);
-                }
-              }).catch((err) => {
-                setErrorMsg(err instanceof Error ? err.message : 'Auth0 verification failed.');
-              }).finally(() => {
-                setIsLoading(false);
-              });
+          setIsLoading(true);
+          apiClient.auth0Verify(idToken).then((res) => {
+            if (res.requireMfa && res.challengeToken) {
+              setMfaRequired(true);
+              setChallengeToken(res.challengeToken);
+              setHasPasskeys(res.hasPasskeys || false);
+              setSuccessMsg('Auth0 identity verified. Secondary hardware MFA challenge mandatory.');
+              window.history.replaceState(null, '', window.location.pathname);
             }
-          }
+          }).catch((err) => {
+            setErrorMsg(err instanceof Error ? err.message : 'Auth0 verification failed.');
+          }).finally(() => {
+            setIsLoading(false);
+          });
         }
       } catch (err) {
         console.error('Error handling Auth0 callback:', err);
@@ -87,7 +79,9 @@ export default function SecurityGate({ onAuthenticated }: SecurityGateProps) {
       return;
     }
     const redirectUri = encodeURIComponent(`${window.location.origin}/admin`);
-    const nonce = Math.random().toString(36).substring(2);
+    const randomBytes = new Uint8Array(16);
+    window.crypto.getRandomValues(randomBytes);
+    const nonce = Array.from(randomBytes, (b) => b.toString(16).padStart(2, '0')).join('');
     const authUrl = `https://${auth0Domain}/authorize?client_id=${auth0ClientId}&response_type=id_token&redirect_uri=${redirectUri}&scope=openid%20profile%20email&nonce=${nonce}`;
     window.location.href = authUrl;
   };

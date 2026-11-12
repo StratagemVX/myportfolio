@@ -244,7 +244,7 @@ class SecurityApiClient {
     });
   }
 
-  async auth0Verify(email: string, sub?: string): Promise<{
+  async auth0Verify(idToken: string): Promise<{
     requireMfa: boolean;
     challengeToken: string;
     allowedFactors: string[];
@@ -253,7 +253,7 @@ class SecurityApiClient {
   }> {
     return this.request('/api/auth/auth0-verify', {
       method: 'POST',
-      body: JSON.stringify({ email, sub })
+      body: JSON.stringify({ idToken })
     });
   }
 
