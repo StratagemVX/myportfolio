@@ -20,7 +20,7 @@ const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 
 function PageLoadingFallback() {
   return (
-    <div className="site-container py-32 flex items-center justify-center font-mono text-xs text-[#A8B8A7]" role="status" aria-live="polite">
+    <div className="site-container min-h-[calc(100vh-4rem)] py-32 flex items-center justify-center font-mono text-xs text-[#A8B8A7]" role="status" aria-live="polite">
       <div className="flex items-center space-x-2">
         <span className="w-2 h-2 rounded-full bg-[#A8B8A7] animate-pulse" />
         <span>Loading module...</span>
@@ -35,7 +35,7 @@ export default function App() {
       <ProfileProvider>
         <div className="min-h-screen bg-[#101114] text-[#F0F0ED] selection:bg-[#A8B8A7] selection:text-[#101114] font-sans antialiased flex flex-col">
           <Navigation />
-          <main className="flex-1" id="main-content">
+          <main className="flex-1 min-h-[calc(100vh-4rem)]" id="main-content">
             <Suspense fallback={<PageLoadingFallback />}>
               <Routes>
                 <Route path="/" element={<HomePage />} />

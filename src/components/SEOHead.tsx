@@ -37,6 +37,33 @@ function updateCanonical(url: string) {
   element.setAttribute('href', url);
 }
 
+let jsonLdPolicy: { createScript: (value: string) => unknown } | null | undefined;
+
+function createSafeJsonLdScriptContent(serializedJson: string): string {
+  if (typeof window === 'undefined') return serializedJson;
+  const tt = (window as unknown as {
+    trustedTypes?: {
+      createPolicy?: (
+        name: string,
+        rules: { createScript?: (input: string) => string }
+      ) => { createScript: (value: string) => unknown };
+    };
+  }).trustedTypes;
+  if (!tt || typeof tt.createPolicy !== 'function') {
+    return serializedJson;
+  }
+  if (jsonLdPolicy === undefined) {
+    try {
+      jsonLdPolicy = tt.createPolicy('portfolio-jsonld', {
+        createScript: (input: string) => JSON.stringify(JSON.parse(input), null, 2)
+      });
+    } catch {
+      jsonLdPolicy = null;
+    }
+  }
+  return jsonLdPolicy ? (jsonLdPolicy.createScript(serializedJson) as string) : serializedJson;
+}
+
 function updateJsonLd(schema: Record<string, any> | null) {
   const SCRIPT_ID = 'route-json-ld';
   let script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
@@ -52,7 +79,7 @@ function updateJsonLd(schema: Record<string, any> | null) {
     script.type = 'application/ld+json';
     document.head.appendChild(script);
   }
-  script.textContent = JSON.stringify(schema, null, 2);
+  script.textContent = createSafeJsonLdScriptContent(JSON.stringify(schema, null, 2));
 }
 
 export default function SEOHead({

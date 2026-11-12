@@ -209,6 +209,61 @@ describe('Chethan Kumar Portfolio Data Integrity & Route Architecture Tests', ()
     expect(indexHtml).not.toContain('fonts.gstatic.com');
     expect(indexHtml).toContain('/fonts/space-grotesk-latin.woff2');
     expect(indexHtml).toContain('/fonts/inter-latin.woff2');
+    expect(indexHtml).toContain('/fonts/jetbrains-mono-latin.woff2');
+  });
+
+  it('publishes valid AI discoverability manifests and enforces strict CSP without unsafe-inline scripts', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const llmsTxt = fs.readFileSync(path.join(process.cwd(), 'public', 'llms.txt'), 'utf-8');
+    expect(llmsTxt.startsWith('# ')).toBe(true);
+    expect(llmsTxt).toContain('https://chethan-kumar-portfolio.vercel.app/');
+    expect(llmsTxt).not.toContain('/admin');
+
+    for (const rel of [
+      'public/ai-catalog.json',
+      'public/.well-known/ard.json',
+      'public/.well-known/ai-catalog.json'
+    ]) {
+      const manifest = JSON.parse(fs.readFileSync(path.join(process.cwd(), rel), 'utf-8'));
+      expect(manifest.specVersion).toBe('1.0');
+      expect(manifest.host?.identifier).toBe('did:web:chethan-kumar-portfolio.vercel.app');
+      expect(Array.isArray(manifest.entries)).toBe(true);
+      expect(manifest.entries.length).toBeGreaterThanOrEqual(4);
+      for (const entry of manifest.entries) {
+        expect(entry.identifier.startsWith('urn:air:')).toBe(true);
+        expect(typeof entry.url).toBe('string');
+        expect(Array.isArray(entry.representativeQueries)).toBe(true);
+        expect(entry.representativeQueries.length).toBeGreaterThanOrEqual(2);
+      }
+    }
+
+    const vercelConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'vercel.json'), 'utf-8'));
+    const catchAllRewrite = vercelConfig.rewrites.find((r: { destination: string }) => r.destination === '/');
+    expect(catchAllRewrite.source).toContain('llms');
+    expect(catchAllRewrite.source).toContain('ai-catalog');
+    expect(catchAllRewrite.source).toContain('.well-known');
+
+    const globalHeaders = vercelConfig.headers.find((h: { source: string }) => h.source === '/(.*)')?.headers || [];
+    const csp = globalHeaders.find((h: { key: string }) => h.key === 'Content-Security-Policy')?.value || '';
+    const scriptSrc = csp.split(';').find((d: string) => d.trim().startsWith('script-src')) || '';
+    expect(scriptSrc).not.toContain('unsafe-inline');
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("require-trusted-types-for 'script'");
+    expect(csp).toContain('trusted-types portfolio-jsonld');
+  });
+
+  it('prevents low-contrast #6E727A foreground text and reserves layout height to prevent CLS', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const appTsx = fs.readFileSync(path.join(process.cwd(), 'src', 'App.tsx'), 'utf-8');
+    expect(appTsx).toContain('min-h-[calc(100vh-4rem)]');
+
+    const acctTsx = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'admin', 'AccountSecuritySection.tsx'), 'utf-8');
+    expect(acctTsx).not.toContain('text-[#6E727A]');
   });
 
   it('validates generated static HTML files for all core routes with unique metadata', async () => {

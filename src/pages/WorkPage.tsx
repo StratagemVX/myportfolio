@@ -181,9 +181,9 @@ export default function WorkPage() {
               <Terminal className="w-3.5 h-3.5" />
               <span>Complete repository directory</span>
             </div>
-            <h3 className="font-display text-xl sm:text-2xl font-medium text-[#F0F0ED]">
+            <h2 className="font-display text-xl sm:text-2xl font-medium text-[#F0F0ED]">
               Looking for coursework repositories, utilities, or lab modules?
-            </h3>
+            </h2>
             <p className="text-xs sm:text-sm text-[#A4A8AE] font-light leading-relaxed">
               The public repository archive indexes all {projectsData.projects.length} repositories with full-text search,
               classification filters, and live GitHub synchronization metadata.

@@ -95,8 +95,9 @@ export default function Navigation() {
           <Link
             to="/admin"
             title="Owner Security Console"
+            aria-label="Owner Security Console"
             className={`p-1.5 transition-colors ${
-              location.pathname === '/admin' ? 'text-[#A8B8A7]' : 'text-[#484D58] hover:text-[#A4A8AE]'
+              location.pathname === '/admin' ? 'text-[#A8B8A7]' : 'text-[#9CA1AA] hover:text-[#F0F0ED]'
             }`}
           >
             <Lock className="w-3.5 h-3.5" />

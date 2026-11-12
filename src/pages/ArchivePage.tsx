@@ -52,8 +52,12 @@ export default function ArchivePage() {
         {/* Filter Toolbar */}
         <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between font-mono text-xs">
           <div className="relative flex-1 max-w-lg">
-            <Search className="w-4 h-4 text-[#A4A8AE] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <label htmlFor="archive-search-input" className="sr-only">
+              Filter repositories by name, language, or stack
+            </label>
+            <Search className="w-4 h-4 text-[#A4A8AE] absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
             <input
+              id="archive-search-input"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -64,8 +68,13 @@ export default function ArchivePage() {
 
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg px-3 py-1.5">
-              <Filter className="w-3.5 h-3.5 text-[#A8B8A7] shrink-0" />
+              <label htmlFor="archive-category-filter" className="sr-only">
+                Filter repositories by category
+              </label>
+              <Filter className="w-3.5 h-3.5 text-[#A8B8A7] shrink-0" aria-hidden="true" />
               <select
+                id="archive-category-filter"
+                aria-label="Filter repositories by category"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="bg-transparent text-[#F0F0ED] focus:outline-none text-xs font-mono cursor-pointer"

@@ -75,7 +75,7 @@ export default function AdminDashboardPage() {
 
   if (isVerifyingSession) {
     return (
-      <div className="py-32 text-center font-mono text-xs text-[#A4A8AE] site-container">
+      <div className="min-h-[calc(100vh-4rem)] py-32 text-center font-mono text-xs text-[#A4A8AE] site-container flex flex-col items-center justify-center">
         <div className="w-6 h-6 border-2 border-[#A8B8A7]/20 border-t-[#A8B8A7] rounded-full animate-spin mx-auto mb-4" />
         <p className="tracking-wider uppercase text-[11px] text-[#A8B8A7]">Verifying Owner Session...</p>
       </div>
@@ -220,7 +220,7 @@ export default function AdminDashboardPage() {
                 <div>
                   <div className="flex items-center space-x-2 text-[#A8B8A7]">
                     <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                    <h3 className="font-display text-base font-medium text-[#F0F0ED]">GitHub Synchronization Engine</h3>
+                    <h2 className="font-display text-base font-medium text-[#F0F0ED]">GitHub Synchronization Engine</h2>
                   </div>
                   <p className="text-[11px] text-[#A4A8AE] mt-1">
                     Source of Truth: <code className="text-[#A8B8A7]">https://github.com/StratagemVX</code> · 

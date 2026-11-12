@@ -943,7 +943,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
       {activeTab === 'profile' && (
         <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg p-7 space-y-6">
           <div className="border-b border-[rgba(255,255,255,0.08)] pb-4">
-            <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Owner Profile Administration</h3>
+            <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Owner Profile Administration</h2>
             <p className="text-[#A4A8AE] text-xs mt-1 font-sans font-light">
               Manage your verified digital identity attributes and public display presentation.
             </p>
@@ -951,8 +951,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
 
           <form onSubmit={handleSaveProfile} className="space-y-4 max-w-xl">
             <div>
-              <label className="block text-[#A4A8AE] mb-1.5">Official Legal Name</label>
+              <label htmlFor="owner-full-name" className="block text-[#A4A8AE] mb-1.5">Official Legal Name</label>
               <input
+                id="owner-full-name"
                 type="text"
                 value={editFullName}
                 onChange={(e) => setEditFullName(e.target.value)}
@@ -962,8 +963,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
             </div>
 
             <div>
-              <label className="block text-[#A4A8AE] mb-1.5">Preferred Professional Display Name</label>
+              <label htmlFor="owner-display-name" className="block text-[#A4A8AE] mb-1.5">Preferred Professional Display Name</label>
               <input
+                id="owner-display-name"
                 type="text"
                 value={editDisplayName}
                 onChange={(e) => setEditDisplayName(e.target.value)}
@@ -973,8 +975,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
             </div>
 
             <div>
-              <label className="block text-[#A4A8AE] mb-1.5">Professional Title</label>
+              <label htmlFor="owner-title" className="block text-[#A4A8AE] mb-1.5">Professional Title</label>
               <input
+                id="owner-title"
                 type="text"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
@@ -984,8 +987,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
             </div>
 
             <div>
-              <label className="block text-[#A4A8AE] mb-1.5">Primary Location</label>
+              <label htmlFor="owner-location" className="block text-[#A4A8AE] mb-1.5">Primary Location</label>
               <input
+                id="owner-location"
                 type="text"
                 value={editLocation}
                 onChange={(e) => setEditLocation(e.target.value)}
@@ -997,7 +1001,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
             <div className="p-4 bg-[#101114] border border-[rgba(255,255,255,0.06)] rounded space-y-1">
               <span className="text-[10px] text-[#A4A8AE]">VERIFIED LOGIN IDENTITY</span>
               <p className="font-mono text-sm text-[#A8B8A7]">{profile.loginEmailMasked}</p>
-              <span className="text-[10px] text-[#6E727A]">Masked for defense-in-depth privacy.</span>
+              <span className="text-[10px] text-[#9CA1AA]">Masked for defense-in-depth privacy.</span>
             </div>
 
             <div className="pt-2">
@@ -1019,7 +1023,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
       {activeTab === 'identifier' && (
         <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg p-7 space-y-6">
           <div className="border-b border-[rgba(255,255,255,0.08)] pb-4">
-            <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Account Identifiers & Recovery Addresses</h3>
+            <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Account Identifiers & Recovery Addresses</h2>
             <p className="text-[#A4A8AE] text-xs mt-1 font-sans font-light">
               Clear distinction between login username, login email, and verified recovery destinations.
             </p>
@@ -1065,7 +1069,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                   <p className="text-[#A4A8AE] text-[11px]">
                     Enter new primary email address. A 6-digit confirmation code will be dispatched to verify mailbox ownership.
                   </p>
+                  <label htmlFor="new-login-email-input" className="sr-only">New primary login email address</label>
                   <input
+                    id="new-login-email-input"
                     type="email"
                     value={newLoginEmail}
                     onChange={(e) => setNewLoginEmail(e.target.value)}
@@ -1085,7 +1091,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                   <p className="text-[#A8B8A7] text-[11px]">
                     Confirmation code sent to <strong className="text-[#F0F0ED]">{newLoginEmail}</strong>. Valid for 10 minutes.
                   </p>
+                  <label htmlFor="new-login-email-otp" className="sr-only">6-digit confirmation code for primary email update</label>
                   <input
+                    id="new-login-email-otp"
                     type="text"
                     maxLength={6}
                     value={emailChangeOtp}
@@ -1125,7 +1133,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                   <p className="text-[#A4A8AE] text-[11px]">
                     Enter new trusted recovery destination. A 6-digit confirmation code will be dispatched to verify delivery.
                   </p>
+                  <label htmlFor="new-recovery-email-input" className="sr-only">New trusted recovery email address</label>
                   <input
+                    id="new-recovery-email-input"
                     type="email"
                     value={newRecoveryEmailInput}
                     onChange={(e) => setNewRecoveryEmailInput(e.target.value)}
@@ -1145,7 +1155,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                   <p className="text-[#A8B8A7] text-[11px]">
                     Confirmation code sent to <strong className="text-[#F0F0ED]">{newRecoveryEmailInput}</strong>. Valid for 10 minutes.
                   </p>
+                  <label htmlFor="new-recovery-email-otp" className="sr-only">6-digit confirmation code for recovery email update</label>
                   <input
+                    id="new-recovery-email-otp"
                     type="text"
                     maxLength={6}
                     value={recoveryEmailOtp}
@@ -1189,7 +1201,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
       {activeTab === 'password' && (
         <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg p-7 space-y-6">
           <div className="border-b border-[rgba(255,255,255,0.08)] pb-4">
-            <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Authenticated Password Management</h3>
+            <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Authenticated Password Management</h2>
             <p className="text-[#A4A8AE] text-xs mt-1 font-sans font-light">
               Initiate official Auth0 password-change workflows with out-of-band email confirmation.
             </p>
@@ -1221,10 +1233,11 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
           {passwordOtpStep === 'OTP_SENT' && (
             <form onSubmit={handleVerifyPasswordOtp} className="space-y-4 max-w-md bg-[#101114] p-5 rounded border border-[rgba(255,255,255,0.08)]">
               <div>
-                <label className="block text-[#A4A8AE] mb-1.5">
+                <label htmlFor="password-change-otp-code" className="block text-[#A4A8AE] mb-1.5">
                   Enter 6-Digit Email Confirmation Code
                 </label>
                 <input
+                  id="password-change-otp-code"
                   type="text"
                   maxLength={6}
                   value={passwordOtpCode}
@@ -1283,7 +1296,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
       {activeTab === 'mfa' && (
         <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg p-7 space-y-6">
           <div className="border-b border-[rgba(255,255,255,0.08)] pb-4">
-            <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Multi-Factor Authentication (MFA) Policy</h3>
+            <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Multi-Factor Authentication (MFA) Policy</h2>
             <p className="text-[#A4A8AE] text-xs mt-1 font-sans font-light">
               System-wide enforcement rules governing administrative clearance.
             </p>
@@ -1329,7 +1342,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
         <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg p-7 space-y-6">
           <div className="border-b border-[rgba(255,255,255,0.08)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Multi-Factor Authenticator Applications</h3>
+              <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Multi-Factor Authenticator Applications</h2>
               <p className="text-[#A4A8AE] text-xs mt-1 font-sans font-light">
                 Configure and manage Google Authenticator, Microsoft Authenticator, and hardware-backed factors.
               </p>
@@ -1372,7 +1385,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       </div>
                       <div>
                         <span className="block font-medium">Google Authenticator</span>
-                        <span className="text-[10px] text-[#6E727A]">RFC 6238 TOTP Standard</span>
+                        <span className="text-[10px] text-[#9CA1AA]">RFC 6238 TOTP Standard</span>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -1390,10 +1403,10 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       {enrolledGoogle ? (
                         <div>
                           <div>Enrolled: {enrolledGoogle.enrolledAtIST || new Date(enrolledGoogle.enrolledAt).toLocaleDateString()}</div>
-                          {enrolledGoogle.lastVerifiedAt && <div className="text-[10px] text-[#6E727A]">Last verified: {enrolledGoogle.lastVerifiedAt}</div>}
+                          {enrolledGoogle.lastVerifiedAt && <div className="text-[10px] text-[#9CA1AA]">Last verified: {enrolledGoogle.lastVerifiedAt}</div>}
                         </div>
                       ) : (
-                        <span className="text-[#6E727A]">Ready for enrollment</span>
+                        <span className="text-[#9CA1AA]">Ready for enrollment</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -1428,7 +1441,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       </div>
                       <div>
                         <span className="block font-medium">Microsoft Authenticator</span>
-                        <span className="text-[10px] text-[#6E727A]">RFC 6238 TOTP Standard</span>
+                        <span className="text-[10px] text-[#9CA1AA]">RFC 6238 TOTP Standard</span>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -1446,10 +1459,10 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       {enrolledMicrosoft ? (
                         <div>
                           <div>Enrolled: {enrolledMicrosoft.enrolledAtIST || new Date(enrolledMicrosoft.enrolledAt).toLocaleDateString()}</div>
-                          {enrolledMicrosoft.lastVerifiedAt && <div className="text-[10px] text-[#6E727A]">Last verified: {enrolledMicrosoft.lastVerifiedAt}</div>}
+                          {enrolledMicrosoft.lastVerifiedAt && <div className="text-[10px] text-[#9CA1AA]">Last verified: {enrolledMicrosoft.lastVerifiedAt}</div>}
                         </div>
                       ) : (
-                        <span className="text-[#6E727A]">Ready for enrollment</span>
+                        <span className="text-[#9CA1AA]">Ready for enrollment</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -1484,7 +1497,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       </div>
                       <div>
                         <span className="block font-medium">Emergency Recovery Codes</span>
-                        <span className="text-[10px] text-[#6E727A]">Single-use offline backup hashes</span>
+                        <span className="text-[10px] text-[#9CA1AA]">Single-use offline backup hashes</span>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -1502,7 +1515,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       {profile.recoveryCodesGeneratedAt ? (
                         <div>Generated: {new Date(profile.recoveryCodesGeneratedAt).toLocaleDateString()}</div>
                       ) : (
-                        <span className="text-[#6E727A]">Not generated</span>
+                        <span className="text-[#9CA1AA]">Not generated</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -1524,7 +1537,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       </div>
                       <div>
                         <span className="block font-medium">Passkeys & Security Keys</span>
-                        <span className="text-[10px] text-[#6E727A]">FIDO2 / WebAuthn Biometric</span>
+                        <span className="text-[10px] text-[#9CA1AA]">FIDO2 / WebAuthn Biometric</span>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -1542,7 +1555,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       {(profile.passkeys || []).length > 0 ? (
                         <span>Hardware biometric verified</span>
                       ) : (
-                        <span className="text-[#6E727A]">No passkeys registered</span>
+                        <span className="text-[#9CA1AA]">No passkeys registered</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -1628,18 +1641,19 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       {copiedKey ? <Check className="w-3.5 h-3.5 text-[#A8B8A7]" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                  <span className="text-[10px] text-[#6E727A] block">
+                  <span className="text-[10px] text-[#9CA1AA] block">
                     Account: {profile.loginEmailMasked} · Issuer: ChethanKumarPortfolio
                   </span>
                 </div>
               </div>
 
               <form onSubmit={handleConfirmTotpEnroll} className="space-y-3 pt-3 border-t border-[rgba(255,255,255,0.06)]">
-                <label className="block text-[#A4A8AE] text-[11px]">
+                <label htmlFor="totp-enroll-verify-code" className="block text-[#A4A8AE] text-[11px]">
                   Enter the 6-digit code currently shown in {totpEnrollData.appLabel}:
                 </label>
                 <div className="flex items-center space-x-3">
                   <input
+                    id="totp-enroll-verify-code"
                     type="text"
                     maxLength={6}
                     value={totpVerifyCode}
@@ -1667,7 +1681,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
       {activeTab === 'passkeys' && (
         <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg p-7 space-y-6">
           <div className="border-b border-[rgba(255,255,255,0.08)] pb-4">
-            <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Passkeys and FIDO2 Hardware Security Keys</h3>
+            <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Passkeys and FIDO2 Hardware Security Keys</h2>
             <p className="text-[#A4A8AE] text-xs mt-1 font-sans font-light">
               Phishing-resistant WebAuthn biometric authentication via Windows Hello, Touch ID, or YubiKey.
             </p>
@@ -1699,6 +1713,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                           {editingPasskeyId === pk.id ? (
                             <div className="flex items-center space-x-2">
                               <input
+                                aria-label="Edit passkey device label"
                                 type="text"
                                 value={editingPasskeyLabel}
                                 onChange={(e) => setEditingPasskeyLabel(e.target.value)}
@@ -1762,8 +1777,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
           <form onSubmit={handleEnrollPasskey} className="bg-[#101114] border border-[rgba(255,255,255,0.06)] p-5 rounded-lg space-y-3 max-w-lg">
             <span className="text-[#F0F0ED] font-medium text-xs block">Enrol New Biometric / Security Key</span>
             <div>
-              <label className="block text-[#A4A8AE] text-[11px] mb-1">Device Label</label>
+              <label htmlFor="new-passkey-device-label" className="block text-[#A4A8AE] text-[11px] mb-1">Device Label</label>
               <input
+                id="new-passkey-device-label"
                 type="text"
                 value={passkeyLabel}
                 onChange={(e) => setPasskeyLabel(e.target.value)}
@@ -1790,7 +1806,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
         <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg p-7 space-y-6">
           <div className="border-b border-[rgba(255,255,255,0.08)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Emergency Account Recovery Methods</h3>
+              <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Emergency Account Recovery Methods</h2>
               <p className="text-[#A4A8AE] text-xs mt-1 font-sans font-light">
                 Out-of-band single-use recovery codes for emergency access when authenticator devices are unavailable.
               </p>
@@ -1820,7 +1836,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 bg-[#181A1F] rounded border border-[rgba(255,255,255,0.08)] font-mono text-sm text-[#F0F0ED]">
                 {revealedCodes.map((code, idx) => (
                   <div key={idx} className="p-1.5 flex items-center justify-between">
-                    <span className="text-[#6E727A] text-xs">{idx + 1}.</span>
+                    <span className="text-[#9CA1AA] text-xs">{idx + 1}.</span>
                     <span className="font-semibold tracking-wider text-[#A8B8A7]">{code}</span>
                   </div>
                 ))}
@@ -1879,7 +1895,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
         <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg p-7 space-y-6">
           <div className="border-b border-[rgba(255,255,255,0.08)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Multi-Channel Security Notification Engine</h3>
+              <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Multi-Channel Security Notification Engine</h2>
               <p className="text-[#A4A8AE] text-xs mt-1 font-sans font-light">
                 Real-time automated delivery pipelines for logins, password updates, and suspicious activities.
               </p>
@@ -1938,7 +1954,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                       <div className="flex items-center space-x-2">
                         <span className={`w-2 h-2 rounded-full ${item.severity === 'CRITICAL' ? 'bg-red-400' : 'bg-[#A8B8A7]'}`} />
                         <span className="font-semibold text-xs">{item.headline || item.subject}</span>
-                        <span className="text-[10px] font-mono text-[#6E727A]">
+                        <span className="text-[10px] font-mono text-[#9CA1AA]">
                           {item.createdAtIST || item.timestampIST || (item.createdAt ? new Date(item.createdAt).toLocaleString() : (item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Recent'))}
                         </span>
                       </div>
@@ -2056,7 +2072,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                   </span>
                 </div>
                 {notificationData.providers.email.lastProviderReference && (
-                  <p className="text-[10px] text-[#6E727A] font-mono mt-1">
+                  <p className="text-[10px] text-[#9CA1AA] font-mono mt-1">
                     Last Operation ID / Message ID: {notificationData.providers.email.lastProviderReference}
                   </p>
                 )}
@@ -2148,7 +2164,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                   </p>
                 )}
                 {notificationData.providers.sms.lastProviderReference && (
-                  <p className="text-[10px] text-[#6E727A] font-mono mt-0.5">
+                  <p className="text-[10px] text-[#9CA1AA] font-mono mt-0.5">
                     Last Twilio SID: {notificationData.providers.sms.lastProviderReference}
                   </p>
                 )}
@@ -2227,7 +2243,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                   </p>
                 )}
                 {notificationData.providers.whatsapp.lastProviderReference && (
-                  <p className="text-[10px] text-[#6E727A] font-mono mt-0.5">
+                  <p className="text-[10px] text-[#9CA1AA] font-mono mt-0.5">
                     Last Message SID: {notificationData.providers.whatsapp.lastProviderReference}
                   </p>
                 )}
@@ -2292,7 +2308,11 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                 Enter the 6-digit confirmation code dispatched to {phoneVerifyChannel === 'WHATSAPP' ? notificationData.destinations.whatsappMasked : notificationData.destinations.mobileMasked}.
               </p>
               <form onSubmit={handleConfirmPhoneVerify} className="flex items-center space-x-2">
+                <label htmlFor="phone-verify-code" className="sr-only">
+                  6-digit phone verification code
+                </label>
                 <input
+                  id="phone-verify-code"
                   type="text"
                   maxLength={6}
                   value={phoneVerifyCode}
@@ -2363,7 +2383,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                     {notificationData.destinations.mobileVerified ? 'Caller ID Verified' : 'Unverified (OTP Req)'}
                   </span></div>
                   <div>Geo-Perms: <span className="text-[#A8B8A7]">India (+91) Enabled</span></div>
-                  <div>Latest SID: <span className="text-[#6E727A] truncate block">{notificationData.providers.sms.lastProviderReference || 'None'}</span></div>
+                  <div>Latest SID: <span className="text-[#9CA1AA] truncate block">{notificationData.providers.sms.lastProviderReference || 'None'}</span></div>
                 </div>
               </div>
 
@@ -2377,7 +2397,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                   <div>Sender: <span className="text-[#F0F0ED]">{notificationData.providers.email.fromAddress}</span></div>
                   <div>Target: <span className="text-[#F0F0ED]">{notificationData.destinations.emailMasked}</span></div>
                   <div>Async Op: <span className="text-[#A8B8A7]">{notificationData.providers.email.lastProviderReference ? 'Active' : 'Standby'}</span></div>
-                  <div>Delivery: <span className="text-[#6E727A]">
+                  <div>Delivery: <span className="text-[#9CA1AA]">
                     {notificationData.providers.email.lastDeliveredAtIST ? 'Confirmed Delivery' : 'Strict Callback Verified'}
                   </span></div>
                 </div>
@@ -2395,7 +2415,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                   <div>Opt-In: <span className={notificationData.providers.whatsapp.recipientJoined ? 'text-[#A8B8A7]' : 'text-amber-400'}>
                     {notificationData.providers.whatsapp.recipientJoined ? 'Joined Sandbox' : 'Keyword Pending'}
                   </span></div>
-                  <div>Latest SID: <span className="text-[#6E727A] truncate block">{notificationData.providers.whatsapp.lastProviderReference || 'None'}</span></div>
+                  <div>Latest SID: <span className="text-[#9CA1AA] truncate block">{notificationData.providers.whatsapp.lastProviderReference || 'None'}</span></div>
                 </div>
               </div>
             </div>
@@ -2442,20 +2462,20 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
                     {notificationHistory.slice(0, 15).map(record => (
                       <tr key={record.id}>
                         <td className="py-2 px-3 text-[#A4A8AE] whitespace-nowrap">{record.timestampIST}</td>
-                        <td className="py-2 px-3 font-mono text-[#6E727A] text-[10px]">{record.id}</td>
+                        <td className="py-2 px-3 font-mono text-[#9CA1AA] text-[10px]">{record.id}</td>
                         <td className="py-2 px-3 font-medium text-[#F0F0ED]">{record.channel}</td>
                         <td className="py-2 px-3 font-mono text-[#A8B8A7]">{record.destinationMasked}</td>
                         <td className="py-2 px-3 text-[#A4A8AE] max-w-[120px] truncate" title={record.eventType}>{record.eventType}</td>
                         <td className="py-2 px-3">{renderStatusBadge(record.status)}</td>
                         <td className="py-2 px-3 text-[#A4A8AE] font-mono text-[10px]">
                           <div>{record.provider}</div>
-                          {record.providerMessageId && <div className="text-[#6E727A] truncate max-w-[160px]">{record.providerMessageId}</div>}
+                          {record.providerMessageId && <div className="text-[#9CA1AA] truncate max-w-[160px]">{record.providerMessageId}</div>}
                         </td>
                         <td className="py-2 px-3 text-[#A4A8AE] text-[10px] max-w-[160px] truncate" title={record.errorInfo || record.errorDetails || ''}>
                           {record.errorInfo || record.errorDetails ? (
                             <span className="text-red-400 font-mono">{record.errorInfo || record.errorDetails}</span>
                           ) : (
-                            <span className="text-[#6E727A]">—</span>
+                            <span className="text-[#9CA1AA]">—</span>
                           )}
                         </td>
                       </tr>
@@ -2475,7 +2495,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
         <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg p-7 space-y-6">
           <div className="border-b border-[rgba(255,255,255,0.08)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Active Device Sessions</h3>
+              <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Active Device Sessions</h2>
               <p className="text-[#A4A8AE] text-xs mt-1 font-sans font-light">
                 Inspect and revoke concurrent authenticated sessions across web browsers and devices.
               </p>
@@ -2537,7 +2557,7 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
         <div className="bg-[#181A1F] border border-[rgba(255,255,255,0.08)] rounded-lg p-7 space-y-6">
           <div className="border-b border-[rgba(255,255,255,0.08)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-display text-lg font-medium text-[#F0F0ED]">Chronological Security Audit Log</h3>
+              <h2 className="font-display text-lg font-medium text-[#F0F0ED]">Chronological Security Audit Log</h2>
               <p className="text-[#A4A8AE] text-xs mt-1 font-sans font-light">
                 Tamper-resistant operational records timestamped in Indian Standard Time (IST).
               </p>
@@ -2545,8 +2565,9 @@ export default function AccountSecuritySection({ initialProfile, onProfileUpdate
 
             {/* Filter */}
             <div className="flex items-center space-x-2 text-[11px]">
-              <span className="text-[#A4A8AE]">Filter:</span>
+              <label htmlFor="security-audit-log-filter" className="text-[#A4A8AE]">Filter:</label>
               <select
+                id="security-audit-log-filter"
                 value={logFilter}
                 onChange={(e) => setLogFilter(e.target.value)}
                 className="bg-[#101114] border border-[rgba(255,255,255,0.08)] rounded px-2.5 py-1 text-[#F0F0ED] focus:outline-none focus:border-[#A8B8A7]"

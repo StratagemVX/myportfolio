@@ -178,7 +178,11 @@ export default function RecruiterRoomPage() {
         </p>
 
         <form onSubmit={handleVerify} className="flex flex-col sm:flex-row gap-3 max-w-md font-mono text-xs">
+          <label htmlFor="recruiter-room-token" className="sr-only">
+            Recruiter invitation verification token
+          </label>
           <input
+            id="recruiter-room-token"
             type="text"
             value={token}
             onChange={(e) => setToken(e.target.value)}
