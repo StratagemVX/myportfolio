@@ -89,7 +89,7 @@ Run from the repository root:
 | `npx tsc --noEmit` | TypeScript compiler check | Validates strict TypeScript types across client and server |
 | `npm run build` | `tsc && vite build && node scripts/generate-static-pages.mjs && npm run build:api` | Type-checks, builds SPA, prerenders static HTML routes, and bundles `api/index.js` + `api/[...path].js` |
 | `npm run build:api` | `esbuild api/serverless.ts ...` | Rebuilds Vercel serverless function bundles |
-| `npm test` | `vitest run` | Runs unit, security, and metadata verification suites (run `npm run build` first so `dist/` HTML tests can verify prerendered routes) |
+| `npm test` | `vitest run` | Runs unit, security, and metadata verification suites (run `npm run build` first so `dist/` HTML tests can verify prerendered routes; once PR #1 merges, set test-only `ADMIN_PASSWORD` >= 16 chars and `SECURITY_HMAC_KEY` >= 32 bytes in env) |
 | `npm run sync:github` | `node scripts/sync-github.mjs` | Synchronizes public GitHub repository metadata into `src/data/` |
 | `npm run preview` | `vite preview` | Previews static `dist/` build locally |
 

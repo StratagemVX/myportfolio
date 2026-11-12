@@ -49,7 +49,9 @@ These variables are read exclusively by `server/` and `api/serverless.ts`.
 | `ADMIN_PASSWORD` | Yes | Strong administrator password (minimum 16 characters; placeholders/default strings rejected). |
 | `SECURITY_HMAC_KEY` | Yes | High-entropy HMAC signing & OTP key (minimum 32 bytes; placeholders/default strings rejected). |
 | `CORS_ALLOWED_ORIGINS` | Yes | Strict comma-separated allowlist of trusted browser origins. |
-| `AUTH0_DOMAIN` | Recommended | Auth0 tenant domain used by `server/auth0.ts` to verify JWT signatures (RS256/JWKS), issuer, audience, and verified owner email. |
+| `AUTH0_DOMAIN` | Recommended | Auth0 tenant domain used by `server/auth0.ts` to verify JWT signatures (RS256/JWKS) and issuer claims. |
+| `AUTH0_CLIENT_ID` | Recommended | Auth0 client ID validated in verified ID token audience (`aud`) claims. |
+| `WEBAUTHN_RP_ID` | Optional | Explicit WebAuthn Relying Party ID override (defaults to validated request hostname). |
 | `GITHUB_TOKEN` | No | Optional GitHub PAT for `scripts/sync-github.mjs` and owner-authenticated `/api/admin/sync` dispatch. |
 | `STATE_FILE_PATH` | No | Override path for local JSON security state persistence. |
 | `NOTIFICATIONS_LOG_PATH` | No | Override path for local JSON notification delivery log. |
