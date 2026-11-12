@@ -38,7 +38,7 @@ In your local `.env` or Vercel project settings:
 ```bash
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
 EMAIL_FROM=security@chethankumar.dev
-OWNER_ALERT_EMAIL=the.suryaputraa@gmail.com
+OWNER_ALERT_EMAIL=owner@example.com
 ```
 
 ---
@@ -52,7 +52,7 @@ If using SendGrid:
    ```bash
    SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxxxxxx
    EMAIL_FROM=security@chethankumar.dev
-   OWNER_ALERT_EMAIL=the.suryaputraa@gmail.com
+   OWNER_ALERT_EMAIL=owner@example.com
    ```
 
 ---
@@ -67,7 +67,7 @@ SMTP_USER=your_smtp_username
 SMTP_PASS=your_smtp_password
 SMTP_SECURE=false
 EMAIL_FROM=security@chethankumar.dev
-OWNER_ALERT_EMAIL=the.suryaputraa@gmail.com
+OWNER_ALERT_EMAIL=owner@example.com
 ```
 
 ---
@@ -82,4 +82,4 @@ OWNER_ALERT_EMAIL=the.suryaputraa@gmail.com
 4. Click **Send Test Email**:
    - The server dispatches a diagnostic security email to `OWNER_ALERT_EMAIL`.
    - The response status displays `ACCEPTED` with the provider's reference message ID (e.g. `res_abc123`).
-   - Check your inbox at `the.suryaputraa@gmail.com`.
+   - Check your inbox at `owner@example.com`.

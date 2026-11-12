@@ -19,9 +19,9 @@ All notification targets and account credentials are resolved exclusively server
 | Entity | Identifier / Destination | Environment Variable | Dashboard Masked Display |
 |---|---|---|---|
 | **Twilio Account Owner** | `karnashaiva81@gmail.com` | `TWILIO_ACCOUNT_EMAIL` | `k***@g***.com` |
-| **Alert Destination Email** | `the.suryaputraa@gmail.com` | `OWNER_ALERT_EMAIL` | `t***@g***.com` |
-| **SMS Alert Target** | `+919380469287` | `OWNER_ALERT_PHONE_E164` | `+91 93804 •••••` |
-| **WhatsApp Alert Target** | `+919380469287` | `OWNER_WHATSAPP_PHONE_E164` | `+91 93804 •••••` |
+| **Alert Destination Email** | `owner@example.com` | `OWNER_ALERT_EMAIL` | `o***@e***.com` |
+| **SMS Alert Target** | `+15550000000` | `OWNER_ALERT_PHONE_E164` | `+1 555 ••••••` |
+| **WhatsApp Alert Target** | `+15550000000` | `OWNER_WHATSAPP_PHONE_E164` | `+1 555 ••••••` |
 | **Audit Timezone** | `Asia/Kolkata` (IST, UTC+5:30) | System Default | e.g. `08 Nov 2026, 02:30:00 IST` |
 
 ---
@@ -68,7 +68,7 @@ The notification subsystem **never simulates delivery** and **never claims `DELI
 |---|---|---|
 | `CREATED` | Notification record initialized with unique Event ID & Idempotency Key. | Slate Badge |
 | `BLOCKED_CONFIGURATION` | Missing credentials or unconfigured provider in server environment. No wire dispatch attempted. | Amber Badge |
-| `AWAITING_RECIPIENT_VERIFICATION` | Recipient destination (`+919380469287`) requires verification in Twilio Console or WhatsApp Sandbox opt-in. | Amber Badge |
+| `AWAITING_RECIPIENT_VERIFICATION` | Recipient destination (`+15550000000`) requires verification in Twilio Console or WhatsApp Sandbox opt-in. | Amber Badge |
 | `AWAITING_BUSINESS_APPROVAL` | WhatsApp sender or Business Manager identity verification pending review by provider. | Indigo Badge |
 | `PENDING_DISPATCH` | Notification queued and preflight validation passed; preparing network request. | Sky Badge |
 | `DISPATCHING` | Asynchronous HTTP request in flight to provider REST endpoint. | Cyan Pulse Badge |
@@ -90,7 +90,7 @@ The notification subsystem **never simulates delivery** and **never claims `DELI
 - **Endpoint:** `POST https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Messages.json`
 - **Authentication:** `Authorization: Basic base64(TWILIO_API_KEY_SID:TWILIO_API_KEY_SECRET)`
 - **Request Form Fields:**
-  - `To`: `+919380469287`
+  - `To`: `+15550000000`
   - `From`: `TWILIO_FROM_NUMBER` (or `MessagingServiceSid`: `TWILIO_MESSAGING_SERVICE_SID`)
   - `Body`: Notification alert or test message
   - `StatusCallback`: `https://<domain>/api/webhooks/twilio/sms`
@@ -109,7 +109,7 @@ The notification subsystem **never simulates delivery** and **never claims `DELI
     },
     "to": [
       {
-        "address": "the.suryaputraa@gmail.com"
+        "address": "owner@example.com"
       }
     ],
     "content": {
@@ -125,8 +125,8 @@ The notification subsystem **never simulates delivery** and **never claims `DELI
 ### C. Twilio WhatsApp Messaging Pattern
 - **Endpoint:** `POST https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Messages.json`
 - **Sender Address:** `whatsapp:+14155238886` (Sandbox) or approved Business Sender
-- **Recipient Address:** `whatsapp:+919380469287`
-- **Sandbox Requirement:** Recipient must send `join <keyword>` from `+919380469287` to `+1 415 523 8886` before messages can be delivered.
+- **Recipient Address:** `whatsapp:+15550000000`
+- **Sandbox Requirement:** Recipient must send `join <keyword>` from `+15550000000` to `+1 415 523 8886` before messages can be delivered.
 
 ---
 
@@ -147,9 +147,9 @@ The notification subsystem **never simulates delivery** and **never claims `DELI
 Because the Twilio account is a Trial account:
 1. Go to **Phone Numbers > Manage > Verified Caller IDs**.
 2. Click **Add a new Caller ID**.
-3. Enter `+919380469287` and select SMS verification.
+3. Enter `+15550000000` and select SMS verification.
 4. Enter the 6-digit code received on your phone.
-5. In your environment, set `TWILIO_VERIFIED_RECIPIENT_PHONE=+919380469287` and `PHONE_OWNERSHIP_VERIFIED=true`.
+5. In your environment, set `TWILIO_VERIFIED_RECIPIENT_PHONE=+15550000000` and `PHONE_OWNERSHIP_VERIFIED=true`.
 
 ### Step 4: Enable India Geographic Permissions
 1. Navigate to **Messaging > Settings > Geo-Permissions**.
@@ -159,7 +159,7 @@ Because the Twilio account is a Trial account:
 ### Step 5: Join Twilio WhatsApp Sandbox
 1. Go to **Messaging > Try it out > Send a WhatsApp message**.
 2. Note your sandbox join code (e.g., `join <keyword>`).
-3. From `+919380469287`, open WhatsApp and send that exact message to `+1 415 523 8886`.
+3. From `+15550000000`, open WhatsApp and send that exact message to `+1 415 523 8886`.
 4. Wait for the confirmation reply from Twilio Sandbox.
 5. In your environment, set `TWILIO_WHATSAPP_SANDBOX_JOINED=true`.
 

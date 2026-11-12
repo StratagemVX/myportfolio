@@ -38,7 +38,7 @@ For uninterrupted production alerts:
 5. Save this token securely as `WHATSAPP_API_TOKEN`.
 
 ### Step 4: Register Business Phone & Domain Verification
-1. To send messages outside Meta's test sandbox to your personal mobile (`+919380469287`), verify your business identity and add your official phone number.
+1. To send messages outside Meta's test sandbox to your personal mobile (`+15550000000`), verify your business identity and add your official phone number.
 2. Until Meta completes business verification, the portfolio dashboard accurately reports the status as:
    `PENDING_BUSINESS_APPROVAL`
 
@@ -69,13 +69,13 @@ WhatsApp Business requires pre-approved message templates for business-initiated
 
 For fast local testing without waiting for Meta business verification:
 1. In Twilio Console, open **Messaging** > **Try it out** > **Send a WhatsApp message**.
-2. Follow instructions to join your sandbox by sending `join <sandbox-word>` from your phone (`+919380469287`) to the Twilio number.
+2. Follow instructions to join your sandbox by sending `join <sandbox-word>` from your phone (`+15550000000`) to the Twilio number.
 3. Configure environment variables:
    ```bash
    TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    TWILIO_AUTH_TOKEN=your_twilio_auth_token_here
    TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
-   OWNER_WHATSAPP_PHONE_E164=+919380469287
+   OWNER_WHATSAPP_PHONE_E164=+15550000000
    ```
 
 ---
@@ -87,5 +87,5 @@ WHATSAPP_API_TOKEN=EAA...your_system_user_token
 WHATSAPP_PHONE_NUMBER_ID=10xxxxxxxxxxxxx
 WHATSAPP_BUSINESS_ACCOUNT_ID=10xxxxxxxxxxxxx
 WHATSAPP_WEBHOOK_VERIFY_TOKEN=portfolio-security-webhook
-OWNER_WHATSAPP_PHONE_E164=+919380469287
+OWNER_WHATSAPP_PHONE_E164=+15550000000
 ```

@@ -23,7 +23,7 @@ TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
 # Or if using a Messaging Service:
 # TWILIO_MESSAGING_SERVICE_SID=MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-OWNER_ALERT_PHONE_E164=+919380469287
+OWNER_ALERT_PHONE_E164=+15550000000
 ```
 
 ---

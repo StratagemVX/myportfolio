@@ -14,7 +14,7 @@
 
 The frontend is deployed to Vercel's global Edge Network. It features:
 - **Client-Side Routing:** Managed by React Router v6 with clean URLs and custom fallback rewrite (`/(.*) -> /`).
-- **Edge Reverse Proxy for API:** Routes `/api/(.*)` directly to the Railway production backend (`https://backend-api-production-c798.up.railway.app/api/$1`), eliminating CORS and preflight overhead.
+- **Edge Reverse Proxy for API:** Routes `/api/(.*)` directly to the Railway production backend (`https://your-backend.example.com/api/$1`), eliminating CORS and preflight overhead.
 - **Client Cryptography:** In-browser Web Crypto API (`window.crypto.subtle`) executing AES-256-GCM cipher encryption and SHA-256 HMAC verification.
 - **Telemetry:** In-browser latency simulation and Levenshtein dynamic programming matrices on the interactive workbench.
 - **Security Headers:** Strict `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy`.
@@ -48,7 +48,7 @@ Every production route has been tested and verified returning HTTP 200:
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://backend-api-production-c798.up.railway.app/api/$1"
+      "destination": "https://your-backend.example.com/api/$1"
     },
     {
       "source": "/(.*)",
@@ -101,7 +101,7 @@ Every production route has been tested and verified returning HTTP 200:
 Configured for both **Production** and **Preview** environments:
 
 ```bash
-VITE_API_BASE_URL=https://backend-api-production-c798.up.railway.app
+VITE_API_BASE_URL=https://your-backend.example.com
 ```
 
 ---

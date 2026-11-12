@@ -46,7 +46,7 @@ The portfolio uses an enterprise IAM architecture combining **Auth0 Universal Lo
 - Scope: Read-only candidate verification; zero administrative rights.
 
 ### Experience C: Owner Administration (`/admin`)
-- Target: Chethan Kumar B S (`the.suryaputraa@gmail.com`).
+- Target: Chethan Kumar B S (`owner@example.com`).
 - Enforced Policy: Primary password + mandatory secondary MFA challenge (TOTP or Passkey).
 - No remembered-browser bypass.
 - Step-up reauthentication enforced for sensitive security modifications (password reset, email change, factor revocation).
@@ -73,7 +73,7 @@ To connect your Auth0 tenant for enterprise single sign-on:
    ```javascript
    exports.onExecutePostLogin = async (event, api) => {
      // Forward successful login metadata to your portfolio security endpoint
-     // Server records IP, user-agent, and triggers IST email dispatch to the.suryaputraa@gmail.com
+     // Server records IP, user-agent, and triggers IST email dispatch to owner@example.com
    };
    ```
 5. **Populate Environment Variables**:
@@ -89,7 +89,7 @@ To connect your Auth0 tenant for enterprise single sign-on:
 
 ### A. TOTP Software Authenticator
 - Generates 160-bit Base32 secret.
-- Renders high-contrast QR code via `qrcode` with `otpauth://totp/ChethanKumarPortfolio:the.suryaputraa@gmail.com`.
+- Renders high-contrast QR code via `qrcode` with `otpauth://totp/ChethanKumarPortfolio:owner@example.com`.
 - Requires user to submit a valid 6-digit code before factor is registered as active.
 - Emits audit log entry and dispatches security alert email.
 

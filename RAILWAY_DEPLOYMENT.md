@@ -5,9 +5,9 @@
 **Environment:** `production` (`c2896ac3-5c32-4a79-a0fa-e7fc1bddd84a`)  
 **Service Name:** `backend-api`  
 **Service ID:** `023fc46f-216d-44de-afae-ea4be0c3f508`  
-**Production URL:** [https://backend-api-production-c798.up.railway.app](https://backend-api-production-c798.up.railway.app)  
-**Health Check Endpoint:** `https://backend-api-production-c798.up.railway.app/health`  
-**Readiness Endpoint:** `https://backend-api-production-c798.up.railway.app/health/ready`
+**Production URL:** [https://your-backend.example.com](https://your-backend.example.com)  
+**Health Check Endpoint:** `https://your-backend.example.com/health`  
+**Readiness Endpoint:** `https://your-backend.example.com/health/ready`
 
 ---
 
@@ -40,7 +40,7 @@ All 28 sensitive production variables were set directly on the Railway service v
 | `TWILIO_AUTH_TOKEN` | Service | Configured | Twilio API authentication token |
 | `TWILIO_API_KEY_SID` | Service | Configured | High-security API key identifier |
 | `TWILIO_FROM_NUMBER` | Service | Configured | Verified E.164 SMS sender number |
-| `OWNER_ALERT_PHONE_E164` | Service | Configured | Verified owner phone (`+919380469287`) |
+| `OWNER_ALERT_PHONE_E164` | Service | Configured | Verified owner phone (`+15550000000`) |
 | `TWILIO_WHATSAPP_FROM` | Service | Configured | Verified WhatsApp sandbox sender |
 | `OWNER_WHATSAPP_PHONE_E164` | Service | Configured | Verified WhatsApp recipient |
 | `OWNER_ALERT_EMAIL` | Service | Configured | Primary owner security inbox |

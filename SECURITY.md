@@ -14,11 +14,11 @@ The portfolio platform enforces a multi-tier defense-in-depth model separating t
 
 ## 2. Primary Owner Identity Configuration
 
-- **Designated Owner:** Chethan Kumar B S (`the.suryaputraa@gmail.com`)
-- **Login Identifier:** `the.suryaputraa@gmail.com` / `stratagem_vx`
-- **Security Recovery Email:** `the.suryaputraa@gmail.com`
-- **Security Mobile Destination:** `+919380469287`
-- **WhatsApp Notification Destination:** `+919380469287`
+- **Designated Owner:** Chethan Kumar B S (`owner@example.com`)
+- **Login Identifier:** `owner@example.com` / `stratagem_vx`
+- **Security Recovery Email:** `owner@example.com`
+- **Security Mobile Destination:** `+15550000000`
+- **WhatsApp Notification Destination:** `+15550000000`
 
 > [!IMPORTANT]
 > The designated recovery email is kept strictly isolated from ordinary profile edits. Modifying the login identifier requires a recent authenticated session (< 15 min), step-up MFA challenge, dual email verification, and automatic session revocation across all other devices.
@@ -55,12 +55,12 @@ Administrative clearance strictly enforces a second factor at every login:
 2. **Authenticated Password Change Flow:**
    - Owner requests a change from Account & Security.
    - Server validates recent authentication and step-up MFA.
-   - Server generates a cryptographically random 6-digit confirmation code, hashes it with HMAC-SHA256, and sends it to `the.suryaputraa@gmail.com` with a 10-minute expiry (max 3 attempts).
+   - Server generates a cryptographically random 6-digit confirmation code, hashes it with HMAC-SHA256, and sends it to `owner@example.com` with a 10-minute expiry (max 3 attempts).
    - Upon verification, the server invokes the official Auth0 password-reset workflow, delivering a single-use expiring reset link to the verified owner.
    - All other active sessions are immediately revoked.
 3. **Unauthenticated Forgot Password Flow:**
    - Anti-enumeration protection: Returns an identical generic confirmation whether the email exists or not.
-   - Native Auth0 reset ticket sent to `the.suryaputraa@gmail.com`.
+   - Native Auth0 reset ticket sent to `owner@example.com`.
    - Mandatory MFA remains enforced at subsequent login; resetting a password never bypasses MFA.
 
 ---
@@ -78,9 +78,9 @@ Administrative clearance strictly enforces a second factor at every login:
 
 All security notifications are generated with timestamps in **Indian Standard Time (IST, UTC +5:30)**:
 
-- **Email Pipeline:** Primary security channel targeting `the.suryaputraa@gmail.com`. Supports Resend, SendGrid, and SMTP with an emulated delivery queue fallback.
-- **SMS Pipeline:** Twilio integration for critical alerts to `+919380469287`.
-- **WhatsApp Pipeline:** Meta WhatsApp Cloud API integration for template alerts to `+919380469287`.
+- **Email Pipeline:** Primary security channel targeting `owner@example.com`. Supports Resend, SendGrid, and SMTP with an emulated delivery queue fallback.
+- **SMS Pipeline:** Twilio integration for critical alerts to `+15550000000`.
+- **WhatsApp Pipeline:** Meta WhatsApp Cloud API integration for template alerts to `+15550000000`.
 - **Payload Hygiene:** Passwords, OTP codes, recovery keys, and reset tokens are strictly forbidden from subject lines and text payloads.
 
 ---

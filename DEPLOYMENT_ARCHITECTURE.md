@@ -16,7 +16,7 @@ flowchart TD
     end
 
     subgraph Railway ["Railway Cloud Infrastructure (Backend)"]
-        RailwayIngress["Railway HTTPS Ingress\nbackend-api-production-c798.up.railway.app"]
+        RailwayIngress["Railway HTTPS Ingress\nyour-backend.example.com"]
         NodeBackend["Node.js REST Microservice (Port 3001)\nNIXPACKS Container"]
         AuthModule["Security Gate\nPBKDF2 SHA-512 + RFC 6238 TOTP\nWebAuthn Passkeys"]
         NotificationModule["Notification Dispatcher\nTruthful Delivery Status Tracking"]

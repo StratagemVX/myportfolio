@@ -98,7 +98,7 @@ const encrypted = await window.crypto.subtle.encrypt(
 | **Credential Stuffing** | High | Mandatory MFA (TOTP or Passkey) blocks unauthorized access even if credentials are exposed. |
 | **Replay Attacks** | High | Single-use recovery codes are invalidated instantly. WebAuthn challenges are single-use with cryptographic timeouts. |
 | **Session Hijacking** | Medium | Session tokens are transmitted exclusively via HTTP Authorization Bearer headers (immune to CSRF). Sessions expire in 24 hours and can be revoked globally with one click. |
-| **PII Data Exposure** | Medium | Frontend models strictly receive masked contact information (`t***@g***.com`, `+91 ***-***-9287`). Plaintext phone numbers and personal emails are isolated to server environment variables. |
+| **PII Data Exposure** | Medium | Frontend models strictly receive masked contact information (`o***@e***.com`, `+91 ***-***-9287`). Plaintext phone numbers and personal emails are isolated to server environment variables. |
 | **Brute Force & Flooding** | High | Rate-limiting on authentication and notification test endpoints. Twilio notification requests enforce strict idempotency caches. |
 | **XSS & Content Injection** | High | Strict HTTP Content Security Policy (CSP) headers configured in `vercel.json`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`. |
 
